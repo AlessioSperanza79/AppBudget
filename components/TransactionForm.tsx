@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   ScrollView, Modal, Alert, KeyboardAvoidingView,
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Transazione, Categoria, Istituto, TipoTransazione, TipologiaConto } from '../types';
 import { oggiIso } from '../utils/formatters';
 import SelectorData from './SelectorData';
+import { useTema, Tema } from '../constants/tema';
 
 interface Props {
   visibile: boolean;
@@ -16,7 +17,7 @@ interface Props {
   transazioneEsistente?: Transazione;
   categorie: Categoria[];
   istituti: Istituto[];
-  forzaRicorrente?: boolean; // true nella schermata Pianificazione
+  forzaRicorrente?: boolean;
 }
 
 const ETICHETTE_TIPOLOGIA: Record<TipologiaConto, string> = {
@@ -32,6 +33,9 @@ const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = 
 export default function TransactionForm({
   visibile, onChiudi, onSalva, transazioneEsistente, categorie, istituti, forzaRicorrente,
 }: Props) {
+  const t = useTema();
+  const stili = useMemo(() => creaStili(t), [t]);
+
   const [importo,     setImporto]     = useState('');
   const [tipo,        setTipo]        = useState<TipoTransazione>('uscita');
   const [categoriaId, setCategoriaId] = useState('');
@@ -42,7 +46,6 @@ export default function TransactionForm({
   const [ricorrente,  setRicorrente]  = useState(false);
   const [dataFine,    setDataFine]    = useState('');
 
-  // dataFine di default: 12 mesi da oggi
   const dataFineDefault = (): string => {
     const d = new Date();
     d.setFullYear(d.getFullYear() + 1);
@@ -84,7 +87,7 @@ export default function TransactionForm({
     onChiudi();
   };
 
-  const coloreAccento = tipo === 'entrata' ? '#16A34A' : '#DC2626';
+  const coloreAccento = tipo === 'entrata' ? t.entrata : t.uscita;
 
   return (
     <Modal visible={visibile} animationType="slide" presentationStyle="pageSheet">
@@ -99,23 +102,23 @@ export default function TransactionForm({
             {transazioneEsistente ? 'Modifica transazione' : 'Nuova transazione'}
           </Text>
           <TouchableOpacity onPress={onChiudi} hitSlop={8} style={stili.btnChiudi}>
-            <Ionicons name="close" size={18} color="#64748B" />
+            <Ionicons name="close" size={16} color={t.sottile} />
           </TouchableOpacity>
         </View>
 
         <ScrollView style={stili.corpo} keyboardShouldPersistTaps="handled">
 
-          {/* ── Importo (grande e centrato) ── */}
-          <View style={stili.areaImporto}>
+          {/* ── Importo ── */}
+          <View style={[stili.areaImporto, { borderColor: coloreAccento + '40' }]}>
             <Text style={stili.labelImporto}>IMPORTO</Text>
             <View style={stili.rigaImporto}>
-              <Text style={[stili.simboloEuro, { color: importo ? coloreAccento : '#CBD5E1' }]}>€</Text>
+              <Text style={[stili.simboloEuro, { color: importo ? coloreAccento : t.segnaposto }]}>€</Text>
               <TextInput
                 style={[stili.inputImporto, { color: coloreAccento }]}
                 value={importo}
                 onChangeText={setImporto}
                 placeholder="0,00"
-                placeholderTextColor="#CBD5E1"
+                placeholderTextColor={t.segnaposto}
                 keyboardType="decimal-pad"
                 returnKeyType="done"
               />
@@ -126,22 +129,22 @@ export default function TransactionForm({
           {/* ── Tipo ── */}
           <Text style={stili.etichetta}>Tipo</Text>
           <View style={stili.toggleRiga}>
-            {(['uscita', 'entrata'] as TipoTransazione[]).map((t) => {
-              const attivo = tipo === t;
-              const c = t === 'entrata' ? '#16A34A' : '#DC2626';
+            {(['uscita', 'entrata'] as TipoTransazione[]).map((tp) => {
+              const attivo = tipo === tp;
+              const c = tp === 'entrata' ? t.entrata : t.uscita;
               return (
                 <TouchableOpacity
-                  key={t}
+                  key={tp}
                   style={[stili.btnToggle, attivo && { backgroundColor: c, borderColor: c }]}
-                  onPress={() => setTipo(t)}
+                  onPress={() => setTipo(tp)}
                 >
                   <Ionicons
-                    name={t === 'entrata' ? 'arrow-up-circle' : 'arrow-down-circle'}
+                    name={tp === 'entrata' ? 'arrow-up-circle' : 'arrow-down-circle'}
                     size={18}
-                    color={attivo ? '#FFF' : '#94A3B8'}
+                    color={attivo ? '#FFF' : t.piuSottile}
                   />
                   <Text style={[stili.testoToggle, attivo && { color: '#FFF' }]}>
-                    {t === 'entrata' ? 'Entrata' : 'Uscita'}
+                    {tp === 'entrata' ? 'Entrata' : 'Uscita'}
                   </Text>
                 </TouchableOpacity>
               );
@@ -188,13 +191,13 @@ export default function TransactionForm({
               return (
                 <TouchableOpacity
                   key={tp}
-                  style={[stili.btnToggle, attivo && stili.btnToggleAttivo]}
+                  style={[stili.btnToggle, attivo && stili.btnToggleAttivoBlue]}
                   onPress={() => setTipologia(tipologia === tp ? undefined : tp)}
                 >
                   <Ionicons
                     name={ICONE_TIPOLOGIA[tp]}
                     size={18}
-                    color={attivo ? '#FFF' : '#94A3B8'}
+                    color={attivo ? '#FFF' : t.piuSottile}
                   />
                   <Text style={[stili.testoToggle, attivo && { color: '#FFF' }]}>
                     {ETICHETTE_TIPOLOGIA[tp]}
@@ -204,7 +207,7 @@ export default function TransactionForm({
             })}
           </View>
 
-          {/* ── Istituto bancario ── */}
+          {/* ── Istituto ── */}
           {istituti.length > 0 && (
             <>
               <Text style={stili.etichetta}>Istituto (opzionale)</Text>
@@ -239,7 +242,7 @@ export default function TransactionForm({
             value={nota}
             onChangeText={setNota}
             placeholder="Es. pranzo di lavoro..."
-            placeholderTextColor="#CBD5E1"
+            placeholderTextColor={t.segnaposto}
             multiline
           />
 
@@ -255,7 +258,7 @@ export default function TransactionForm({
                 <Ionicons
                   name={ricorrente ? 'repeat' : 'repeat-outline'}
                   size={18}
-                  color={ricorrente ? '#FFF' : '#94A3B8'}
+                  color={ricorrente ? '#FFF' : t.piuSottile}
                 />
                 <Text style={[stili.testoToggle, ricorrente && { color: '#FFF' }]}>
                   {ricorrente ? 'Sì — appare in Pianificazione' : 'No — transazione singola'}
@@ -264,7 +267,6 @@ export default function TransactionForm({
             </>
           )}
 
-          {/* ── Fine ricorrenza (visibile solo se ricorrente) ── */}
           {(ricorrente || forzaRicorrente) && (
             <>
               <Text style={stili.etichetta}>Fine ricorrenza</Text>
@@ -279,6 +281,7 @@ export default function TransactionForm({
         <TouchableOpacity
           style={[stili.btnSalva, { backgroundColor: coloreAccento }]}
           onPress={gestisciSalva}
+          activeOpacity={0.85}
         >
           <Text style={stili.testoSalva}>
             {transazioneEsistente
@@ -292,221 +295,226 @@ export default function TransactionForm({
   );
 }
 
-const stili = StyleSheet.create({
-  sfondo: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
+function creaStili(t: Tema) {
+  return StyleSheet.create({
+    sfondo: {
+      flex: 1,
+      backgroundColor: t.sfondo,
+    },
 
-  // ── Header ──
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    backgroundColor: '#FFF',
-  },
-  titolo: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  btnChiudi: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    // ── Header ──
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+      paddingTop: 24,
+      paddingBottom: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.bordoSottile,
+      backgroundColor: t.carta,
+    },
+    titolo: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    btnChiudi: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: t.superfice,
+      borderWidth: 1,
+      borderColor: t.bordo,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  corpo: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
+    corpo: {
+      flex: 1,
+      paddingHorizontal: 20,
+    },
 
-  // ── Area importo ──
-  areaImporto: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    paddingVertical: 24,
-    paddingHorizontal: 20,
-    marginTop: 20,
-    alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  labelImporto: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
-    letterSpacing: 1.5,
-    marginBottom: 10,
-  },
-  rigaImporto: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  simboloEuro: {
-    fontSize: 26,
-    fontWeight: '700',
-    paddingBottom: 6,
-  },
-  inputImporto: {
-    fontSize: 48,
-    fontWeight: '800',
-    minWidth: 130,
-    letterSpacing: -1.5,
-    paddingVertical: 0,
-  },
-  lineaImporto: {
-    height: 3,
-    width: 72,
-    borderRadius: 2,
-    marginTop: 10,
-    opacity: 0.7,
-  },
+    // ── Area importo ──
+    areaImporto: {
+      backgroundColor: t.carta,
+      borderRadius: 20,
+      borderWidth: 1.5,
+      paddingVertical: 24,
+      paddingHorizontal: 20,
+      marginTop: 20,
+      alignItems: 'center',
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    labelImporto: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: t.piuSottile,
+      letterSpacing: 1.5,
+      marginBottom: 10,
+    },
+    rigaImporto: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: 2,
+    },
+    simboloEuro: {
+      fontSize: 26,
+      fontWeight: '700',
+      paddingBottom: 6,
+    },
+    inputImporto: {
+      fontSize: 48,
+      fontWeight: '800',
+      minWidth: 130,
+      letterSpacing: -1.5,
+      paddingVertical: 0,
+    },
+    lineaImporto: {
+      height: 3,
+      width: 72,
+      borderRadius: 2,
+      marginTop: 10,
+      opacity: 0.8,
+    },
 
-  // ── Etichette sezione ──
-  etichetta: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#94A3B8',
-    marginTop: 22,
-    marginBottom: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-  },
+    // ── Etichette sezione ──
+    etichetta: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: t.piuSottile,
+      marginTop: 22,
+      marginBottom: 10,
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
 
-  // ── Toggle tipo e tipologia ──
-  toggleRiga: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  btnToggle: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 7,
-    paddingVertical: 13,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFF',
-  },
-  btnToggleAttivo: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
-  },
-  testoToggle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
+    // ── Toggle tipo ──
+    toggleRiga: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    btnToggle: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 7,
+      paddingVertical: 13,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      backgroundColor: t.carta,
+    },
+    btnToggleAttivoBlue: {
+      backgroundColor: t.primario,
+      borderColor: t.primario,
+    },
+    testoToggle: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: t.piuSottile,
+    },
 
-  // ── Chip categoria ──
-  chipCategoria: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFF',
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  puntoCat: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
-    flexShrink: 0,
-  },
-  testoCat: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
-  },
+    // ── Chip categoria ──
+    chipCategoria: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 7,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      backgroundColor: t.carta,
+      marginRight: 8,
+      marginBottom: 4,
+    },
+    puntoCat: {
+      width: 9,
+      height: 9,
+      borderRadius: 5,
+      flexShrink: 0,
+    },
+    testoCat: {
+      fontSize: 13,
+      color: t.sottile,
+      fontWeight: '500',
+    },
 
-  // ── Input standard ──
-  input: {
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 13,
-    fontSize: 15,
-    backgroundColor: '#FFF',
-    color: '#0F172A',
-  },
-  inputNota: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
+    // ── Input standard ──
+    input: {
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      borderRadius: 12,
+      padding: 13,
+      fontSize: 15,
+      backgroundColor: t.carta,
+      color: t.titolo,
+    },
+    inputNota: {
+      height: 80,
+      textAlignVertical: 'top',
+    },
 
-  // ── Chip istituto ──
-  chipIstituto: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFF',
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  chipIstitutoAttivo: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
-  },
-  testoChipIstituto: {
-    fontSize: 13,
-    color: '#64748B',
-    fontWeight: '500',
-  },
+    // ── Chip istituto ──
+    chipIstituto: {
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 22,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      backgroundColor: t.carta,
+      marginRight: 8,
+      marginBottom: 4,
+    },
+    chipIstitutoAttivo: {
+      backgroundColor: t.primario,
+      borderColor: t.primario,
+    },
+    testoChipIstituto: {
+      fontSize: 13,
+      color: t.sottile,
+      fontWeight: '500',
+    },
 
-  // ── Ricorrente ──
-  btnRicorrente: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 13,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#FFF',
-  },
-  btnRicorrenteAttivo: {
-    backgroundColor: '#7C3AED',
-    borderColor: '#7C3AED',
-  },
+    // ── Ricorrente ──
+    btnRicorrente: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      padding: 13,
+      borderRadius: 12,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      backgroundColor: t.carta,
+    },
+    btnRicorrenteAttivo: {
+      backgroundColor: t.viola,
+      borderColor: t.viola,
+    },
 
-  // ── Pulsante salva ──
-  btnSalva: {
-    margin: 20,
-    borderRadius: 14,
-    padding: 17,
-    alignItems: 'center',
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  testoSalva: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.3,
-  },
-});
+    // ── Pulsante salva ──
+    btnSalva: {
+      margin: 20,
+      borderRadius: 16,
+      padding: 17,
+      alignItems: 'center',
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    testoSalva: {
+      color: '#FFF',
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.3,
+    },
+  });
+}

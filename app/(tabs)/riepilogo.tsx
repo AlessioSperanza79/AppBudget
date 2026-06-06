@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatEuro } from '../../utils/formatters';
 import TransactionItem from '../../components/TransactionItem';
+import { useTema, Tema } from '../../constants/tema';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -20,27 +21,26 @@ const MESI = [
 
 const LARGHEZZA = Dimensions.get('window').width;
 
-// ── Sub-componente: singola riga del cruscotto flusso ──
-// Usa stili inline perché è definito prima della StyleSheet
 function RigaFlusso({
   etichetta, importo, reddito, colore,
 }: { etichetta: string; importo: number; reddito: number; colore: string }) {
+  const t = useTema();
   const perc = Math.min((importo / reddito) * 100, 100);
   return (
-    <View style={{ marginBottom: 10, gap: 5 }}>
+    <View style={{ marginBottom: 12, gap: 6 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colore, flexShrink: 0 }} />
-        <Text style={{ flex: 1, fontSize: 13, color: '#475569', fontWeight: '500' }} numberOfLines={1}>
+        <Text style={{ flex: 1, fontSize: 13, color: t.corpo, fontWeight: '500' }} numberOfLines={1}>
           {etichetta}
         </Text>
         <Text style={{ fontSize: 13, fontWeight: '700', color: colore }}>{formatEuro(importo)}</Text>
-        <Text style={{ fontSize: 12, color: '#94A3B8', width: 36, textAlign: 'right' }}>
+        <Text style={{ fontSize: 12, color: t.piuSottile, width: 36, textAlign: 'right' }}>
           {Math.round(perc)}%
         </Text>
       </View>
-      <View style={{ height: 5, backgroundColor: '#F1F5F9', borderRadius: 3, overflow: 'hidden', marginLeft: 16 }}>
+      <View style={{ height: 6, backgroundColor: t.bordoSottile, borderRadius: 3, overflow: 'hidden', marginLeft: 16 }}>
         <View style={{
-          height: 5, borderRadius: 3, backgroundColor: colore, opacity: 0.7,
+          height: 6, borderRadius: 3, backgroundColor: colore, opacity: 0.8,
           width: `${perc}%` as `${number}%`,
         }} />
       </View>
@@ -50,6 +50,9 @@ function RigaFlusso({
 
 export default function RiepilogoScreen() {
   const { transazioni, categorie, istituti, reddito, aggiornaReddito } = useFinanceStore();
+
+  const t = useTema();
+  const stili = useMemo(() => creaStili(t), [t]);
 
   const [periodo, setPeriodo] = useState<Periodo>('mensile');
   const [dataCorrente, setDataCorrente] = useState(new Date());
@@ -94,46 +97,44 @@ export default function RiepilogoScreen() {
 
   const saldo = totaleEntrate - totaleUscite;
 
-  // Cruscotto: uscite suddivise per tipo categoria (solo vista mensile)
   const totaleInvestimenti = useMemo(() =>
     transazioniFiltrate
-      .filter((t) => t.tipo === 'uscita' && categorie.find((c) => c.id === t.categoriaId)?.tipo === 'investimento')
-      .reduce((s, t) => s + t.importo, 0),
+      .filter((tr) => tr.tipo === 'uscita' && categorie.find((c) => c.id === tr.categoriaId)?.tipo === 'investimento')
+      .reduce((s, tr) => s + tr.importo, 0),
     [transazioniFiltrate, categorie],
   );
 
   const totaleFisse = useMemo(() =>
     transazioniFiltrate
-      .filter((t) => t.tipo === 'uscita' && categorie.find((c) => c.id === t.categoriaId)?.tipo === 'fissa')
-      .reduce((s, t) => s + t.importo, 0),
+      .filter((tr) => tr.tipo === 'uscita' && categorie.find((c) => c.id === tr.categoriaId)?.tipo === 'fissa')
+      .reduce((s, tr) => s + tr.importo, 0),
     [transazioniFiltrate, categorie],
   );
 
   const totaleVariabili = useMemo(() =>
     transazioniFiltrate
-      .filter((t) => t.tipo === 'uscita' && categorie.find((c) => c.id === t.categoriaId)?.tipo === 'variabile')
-      .reduce((s, t) => s + t.importo, 0),
+      .filter((tr) => tr.tipo === 'uscita' && categorie.find((c) => c.id === tr.categoriaId)?.tipo === 'variabile')
+      .reduce((s, tr) => s + tr.importo, 0),
     [transazioniFiltrate, categorie],
   );
 
   const redditoRiferimento = periodo === 'annuale' ? reddito * 12 : reddito;
   const avanzo = redditoRiferimento - totaleInvestimenti - totaleFisse - totaleVariabili;
 
-  // Sparkline: saldo netto degli ultimi 6 mesi, indipendente dal filtro periodo
   const ultimi6MesiSaldi = useMemo(() =>
     Array.from({ length: 6 }, (_, i) => {
       const d = new Date();
       d.setDate(1);
       d.setMonth(d.getMonth() - (5 - i));
       const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '00')}`;
-      const ts = transazioni.filter((t) => !t.ricorrente && t.data.startsWith(chiave));
+      const ts = transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(chiave));
       return {
-        value: ts.reduce((acc, t) => acc + (t.tipo === 'entrata' ? t.importo : -t.importo), 0),
+        value: ts.reduce((acc, tr) => acc + (tr.tipo === 'entrata' ? tr.importo : -tr.importo), 0),
         label: MESI[d.getMonth()].substring(0, 3),
-        labelTextStyle: { fontSize: 10, color: '#94A3B8' },
+        labelTextStyle: { fontSize: 10, color: t.piuSottile },
       };
     }),
-    [transazioni],
+    [transazioni, t],
   );
 
   const transazioniOrdinate = useMemo(
@@ -142,7 +143,7 @@ export default function RiepilogoScreen() {
   );
 
   const coloriGradiente: [string, string] = saldo >= 0
-    ? ['#16A34A', '#15803D']
+    ? ['#059669', '#047857']
     : ['#DC2626', '#B91C1C'];
 
   const apriModaleReddito = () => {
@@ -177,17 +178,17 @@ export default function RiepilogoScreen() {
           </View>
 
           <View style={stili.navigatore}>
-            <TouchableOpacity onPress={() => naviga(-1)} hitSlop={10}>
-              <Ionicons name="chevron-back" size={20} color="#475569" />
+            <TouchableOpacity onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
+              <Ionicons name="chevron-back" size={18} color={t.sottile} />
             </TouchableOpacity>
             <Text style={stili.labelPeriodo}>{periodoLabel}</Text>
-            <TouchableOpacity onPress={() => naviga(1)} hitSlop={10}>
-              <Ionicons name="chevron-forward" size={20} color="#475569" />
+            <TouchableOpacity onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
+              <Ionicons name="chevron-forward" size={18} color={t.sottile} />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* ── Card saldo con gradiente verde/rosso ── */}
+        {/* ── Card saldo con gradiente ── */}
         <LinearGradient
           colors={coloriGradiente}
           start={{ x: 0, y: 0 }}
@@ -202,25 +203,31 @@ export default function RiepilogoScreen() {
           </Text>
           <View style={stili.rigaStat}>
             <View style={stili.stat}>
-              <Text style={stili.labelStat}>↑ Entrate</Text>
-              <Text style={stili.valoreStat}>{formatEuro(totaleEntrate)}</Text>
+              <View style={stili.rigaStatIcon}>
+                <Ionicons name="arrow-up-circle-outline" size={14} color="#86efac" />
+                <Text style={[stili.labelStat, { color: '#86efac' }]}>Entrate</Text>
+              </View>
+              <Text style={[stili.valoreStat, { color: '#86efac' }]}>{formatEuro(totaleEntrate)}</Text>
             </View>
             <View style={stili.separatoreStat} />
-            <View style={[stili.stat, { backgroundColor: 'rgba(160,0,0,0.50)', borderRadius: 10, padding: 8 }]}>
-              <Text style={stili.labelStat}>↓ Uscite</Text>
-              <Text style={stili.valoreStat}>{formatEuro(totaleUscite)}</Text>
+            <View style={stili.stat}>
+              <View style={stili.rigaStatIcon}>
+                <Ionicons name="arrow-down-circle-outline" size={14} color="#fca5a5" />
+                <Text style={[stili.labelStat, { color: '#fca5a5' }]}>Uscite</Text>
+              </View>
+              <Text style={[stili.valoreStat, { color: '#fca5a5' }]}>{formatEuro(totaleUscite)}</Text>
             </View>
           </View>
         </LinearGradient>
 
-        {/* ── Cruscotto flusso mensile / annuale ── */}
+        {/* ── Cruscotto flusso ── */}
         <View style={stili.cruscotto}>
           <View style={stili.intestazioneCruscotto}>
             <Text style={stili.titoloCruscotto}>
               {periodo === 'mensile' ? 'Flusso mensile' : 'Flusso annuale'}
             </Text>
             <TouchableOpacity style={stili.btnEditReddito} onPress={apriModaleReddito}>
-              <Ionicons name="pencil-outline" size={13} color="#64748B" />
+              <Ionicons name="pencil-outline" size={12} color={t.sottile} />
               <Text style={stili.testoEditReddito}>
                 {reddito > 0 ? formatEuro(redditoRiferimento) : 'Imposta reddito'}
               </Text>
@@ -230,54 +237,43 @@ export default function RiepilogoScreen() {
           {reddito > 0 ? (
             <>
               {totaleInvestimenti > 0 && (
-                <RigaFlusso
-                  etichetta="Investimenti"
-                  importo={totaleInvestimenti}
-                  reddito={redditoRiferimento}
-                  colore="#7C3AED"
-                />
+                <RigaFlusso etichetta="Investimenti" importo={totaleInvestimenti} reddito={redditoRiferimento} colore={t.viola} />
               )}
               {totaleFisse > 0 && (
-                <RigaFlusso
-                  etichetta="Spese fisse"
-                  importo={totaleFisse}
-                  reddito={redditoRiferimento}
-                  colore="#2563EB"
-                />
+                <RigaFlusso etichetta="Spese fisse" importo={totaleFisse} reddito={redditoRiferimento} colore={t.primario} />
               )}
               {totaleVariabili > 0 && (
-                <RigaFlusso
-                  etichetta="Spese variabili"
-                  importo={totaleVariabili}
-                  reddito={redditoRiferimento}
-                  colore="#F97316"
-                />
+                <RigaFlusso etichetta="Spese variabili" importo={totaleVariabili} reddito={redditoRiferimento} colore={t.arancio} />
               )}
               <View style={stili.separatoreCruscotto} />
               <View style={stili.rigaAvanzo}>
-                <Ionicons
-                  name={avanzo >= 0 ? 'checkmark-circle' : 'alert-circle'}
-                  size={16}
-                  color={avanzo >= 0 ? '#16A34A' : '#DC2626'}
-                />
+                <View style={[stili.cerchioAvanzo, { backgroundColor: avanzo >= 0 ? t.entrataSfondo : t.uscitaSfondo }]}>
+                  <Ionicons
+                    name={avanzo >= 0 ? 'checkmark' : 'alert'}
+                    size={14}
+                    color={avanzo >= 0 ? t.entrata : t.uscita}
+                  />
+                </View>
                 <Text style={stili.etichettaAvanzo}>
                   {periodo === 'mensile' ? 'Avanzo' : 'Avanzo annuale'}
                 </Text>
-                <Text style={[stili.valoreAvanzo, { color: avanzo >= 0 ? '#16A34A' : '#DC2626' }]}>
+                <Text style={[stili.valoreAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}>
                   {avanzo >= 0 ? '+' : ''}{formatEuro(avanzo)}
                 </Text>
-                <Text style={[stili.percAvanzo, { color: avanzo >= 0 ? '#16A34A' : '#DC2626' }]}>
+                <Text style={[stili.percAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}>
                   {redditoRiferimento > 0 ? `${Math.round(Math.abs(avanzo / redditoRiferimento) * 100)}%` : ''}
                 </Text>
               </View>
             </>
           ) : (
             <TouchableOpacity style={stili.promptReddito} onPress={apriModaleReddito}>
-              <Ionicons name="wallet-outline" size={20} color="#2563EB" />
+              <View style={stili.cerchioPrompt}>
+                <Ionicons name="wallet-outline" size={18} color={t.primario} />
+              </View>
               <Text style={stili.testoPromptReddito}>
                 Imposta il reddito mensile per vedere come distribuisci ogni euro
               </Text>
-              <Ionicons name="chevron-forward" size={16} color="#2563EB" />
+              <Ionicons name="chevron-forward" size={16} color={t.primario} />
             </TouchableOpacity>
           )}
         </View>
@@ -291,44 +287,42 @@ export default function RiepilogoScreen() {
               width={LARGHEZZA - 96}
               height={90}
               areaChart
-              color="#2563EB"
+              color={t.primario}
               thickness={2}
-              startFillColor="#2563EB"
-              endFillColor="#2563EB"
+              startFillColor={t.primario}
+              endFillColor={t.primario}
               startOpacity={0.15}
               endOpacity={0.01}
-              dataPointsColor="#2563EB"
+              dataPointsColor={t.primario}
               dataPointsRadius={3}
               hideDataPoints={Platform.OS === 'web'}
               noOfSections={3}
-              yAxisTextStyle={{ fontSize: 10, color: '#94A3B8' }}
-              rulesColor="#F1F5F9"
+              yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
+              rulesColor={t.bordoSottile}
               rulesType="solid"
               disableScroll
             />
           </View>
         )}
 
-        {/* ── Transazioni del periodo ── */}
+        {/* ── Lista transazioni del periodo ── */}
         {transazioniOrdinate.length > 0 ? (
           <>
             <Text style={stili.sottotitolo}>
-              Transazioni del periodo ({transazioniOrdinate.length})
+              Transazioni ({transazioniOrdinate.length})
             </Text>
-            {transazioniOrdinate.map((t) => (
+            {transazioniOrdinate.map((tr) => (
               <TransactionItem
-                key={t.id}
-                transazione={t}
-                categoria={categorie.find((c) => c.id === t.categoriaId)}
-                istituto={istituti.find((i) => i.id === t.istitutoId)}
+                key={tr.id}
+                transazione={tr}
+                categoria={categorie.find((c) => c.id === tr.categoriaId)}
+                istituto={istituti.find((i) => i.id === tr.istitutoId)}
                 mostraAzioni={false}
               />
             ))}
           </>
         ) : (
-          <Text style={stili.vuoto}>
-            Nessuna transazione in questo periodo.
-          </Text>
+          <Text style={stili.vuoto}>Nessuna transazione in questo periodo.</Text>
         )}
 
       </ScrollView>
@@ -339,8 +333,7 @@ export default function RiepilogoScreen() {
           <View style={stili.cardModal}>
             <Text style={stili.titoloModal}>Reddito mensile netto</Text>
             <Text style={stili.sottotitoloModal}>
-              Inserisci il tuo stipendio netto (al netto di tasse e contributi).
-              Viene usato per calcolare l'avanzo nel cruscotto flusso.
+              Inserisci il tuo stipendio netto. Viene usato per calcolare l'avanzo nel cruscotto flusso.
             </Text>
             <View style={stili.rigaInputReddito}>
               <Text style={stili.euroSign}>€</Text>
@@ -351,7 +344,7 @@ export default function RiepilogoScreen() {
                 placeholder="0"
                 keyboardType="decimal-pad"
                 returnKeyType="done"
-                placeholderTextColor="#CBD5E1"
+                placeholderTextColor={t.segnaposto}
                 autoFocus
               />
             </View>
@@ -370,304 +363,340 @@ export default function RiepilogoScreen() {
   );
 }
 
-const stili = StyleSheet.create({
-  contenitore: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
+function creaStili(t: Tema) {
+  return StyleSheet.create({
+    contenitore: {
+      flex: 1,
+      backgroundColor: t.sfondo,
+    },
 
-  // ── Controlli periodo ──
-  controlliContenitore: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 4,
-    gap: 10,
-  },
-  toggle: {
-    flexDirection: 'row',
-    backgroundColor: '#E2E8F0',
-    borderRadius: 12,
-    padding: 4,
-  },
-  toggleBtn: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 9,
-    alignItems: 'center',
-  },
-  toggleBtnAttivo: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  toggleTesto: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#64748B',
-  },
-  toggleTestoAttivo: {
-    color: '#0F172A',
-    fontWeight: '700',
-  },
-  navigatore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  labelPeriodo: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
+    // ── Controlli periodo ──
+    controlliContenitore: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 4,
+      gap: 10,
+    },
+    toggle: {
+      flexDirection: 'row',
+      backgroundColor: t.toggleSfondo,
+      borderRadius: 12,
+      padding: 4,
+    },
+    toggleBtn: {
+      flex: 1,
+      paddingVertical: 8,
+      borderRadius: 9,
+      alignItems: 'center',
+    },
+    toggleBtnAttivo: {
+      backgroundColor: t.toggleAttivo,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    toggleTesto: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: t.sottile,
+    },
+    toggleTestoAttivo: {
+      color: t.titolo,
+      fontWeight: '700',
+    },
+    navigatore: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: t.carta,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 10,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    btnNav: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: t.superfice,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    labelPeriodo: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: t.titolo,
+    },
 
-  // ── Card saldo ──
-  cardSaldo: {
-    margin: 16,
-    marginTop: 12,
-    borderRadius: 24,
-    padding: 28,
-    gap: 6,
-  },
-  etichettaSaldo: {
-    color: 'rgba(255,255,255,0.75)',
-    fontSize: 13,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-  },
-  valoreSaldo: {
-    color: '#FFF',
-    fontSize: 44,
-    fontWeight: '800',
-    letterSpacing: -1.5,
-  },
-  rigaStat: {
-    flexDirection: 'row',
-    marginTop: 12,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 14,
-    padding: 14,
-    gap: 12,
-  },
-  stat: {
-    flex: 1,
-    gap: 4,
-  },
-  separatoreStat: {
-    width: 1,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  labelStat: {
-    color: 'rgba(255,255,255,0.65)',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  valoreStat: {
-    color: '#FFF',
-    fontSize: 17,
-    fontWeight: '700',
-  },
+    // ── Card saldo ──
+    cardSaldo: {
+      margin: 16,
+      marginTop: 12,
+      borderRadius: 24,
+      padding: 24,
+      gap: 4,
+    },
+    etichettaSaldo: {
+      color: 'rgba(255,255,255,0.75)',
+      fontSize: 12,
+      fontWeight: '600',
+      letterSpacing: 0.8,
+      textTransform: 'uppercase',
+    },
+    valoreSaldo: {
+      color: '#FFF',
+      fontSize: 42,
+      fontWeight: '800',
+      letterSpacing: -1.5,
+      marginTop: 4,
+    },
+    rigaStat: {
+      flexDirection: 'row',
+      marginTop: 16,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: 'rgba(255,255,255,0.2)',
+      paddingTop: 14,
+      gap: 12,
+    },
+    stat: {
+      flex: 1,
+      gap: 5,
+    },
+    rigaStatIcon: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+    },
+    separatoreStat: {
+      width: 1,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+    },
+    labelStat: {
+      color: 'rgba(255,255,255,0.7)',
+      fontSize: 12,
+      fontWeight: '500',
+    },
+    valoreStat: {
+      color: '#FFF',
+      fontSize: 17,
+      fontWeight: '700',
+    },
 
-  // ── Cruscotto flusso mensile ──
-  cruscotto: {
-    backgroundColor: '#FFF',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  intestazioneCruscotto: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  titoloCruscotto: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  btnEditReddito: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  testoEditReddito: {
-    fontSize: 12,
-    color: '#475569',
-    fontWeight: '600',
-  },
-  separatoreCruscotto: {
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 8,
-  },
-  rigaAvanzo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  etichettaAvanzo: {
-    flex: 1,
-    fontSize: 13,
-    color: '#0F172A',
-    fontWeight: '600',
-  },
-  valoreAvanzo: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  percAvanzo: {
-    fontSize: 12,
-    width: 36,
-    textAlign: 'right',
-    fontWeight: '600',
-  },
-  promptReddito: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 4,
-  },
-  testoPromptReddito: {
-    flex: 1,
-    fontSize: 13,
-    color: '#2563EB',
-    fontWeight: '500',
-    lineHeight: 18,
-  },
+    // ── Cruscotto flusso ──
+    cruscotto: {
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 20,
+      padding: 18,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    intestazioneCruscotto: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 16,
+    },
+    titoloCruscotto: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    btnEditReddito: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: t.superfice,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: t.bordo,
+    },
+    testoEditReddito: {
+      fontSize: 12,
+      color: t.sottile,
+      fontWeight: '600',
+    },
+    separatoreCruscotto: {
+      height: 1,
+      backgroundColor: t.bordoSottile,
+      marginVertical: 10,
+    },
+    cerchioAvanzo: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    rigaAvanzo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    etichettaAvanzo: {
+      flex: 1,
+      fontSize: 13,
+      color: t.titolo,
+      fontWeight: '600',
+    },
+    valoreAvanzo: {
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    percAvanzo: {
+      fontSize: 12,
+      width: 36,
+      textAlign: 'right',
+      fontWeight: '600',
+    },
+    promptReddito: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      paddingVertical: 4,
+    },
+    cerchioPrompt: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: t.primarioSfondo,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    testoPromptReddito: {
+      flex: 1,
+      fontSize: 13,
+      color: t.primario,
+      fontWeight: '500',
+      lineHeight: 18,
+    },
 
-  // ── Sparkline saldo storico ──
-  sezioneSparkline: {
-    backgroundColor: '#FFF',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  titoloSparkline: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
-    marginBottom: 6,
-  },
+    // ── Sparkline ──
+    sezioneSparkline: {
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 20,
+      padding: 18,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    titoloSparkline: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: t.corpo,
+      marginBottom: 8,
+    },
 
-  // ── Lista transazioni ──
-  sottotitolo: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginTop: 4,
-    marginBottom: 6,
-    marginHorizontal: 16,
-  },
-  vuoto: {
-    textAlign: 'center',
-    color: '#94A3B8',
-    margin: 40,
-    lineHeight: 24,
-    fontSize: 15,
-  },
+    // ── Lista transazioni ──
+    sottotitolo: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: t.sottile,
+      marginTop: 4,
+      marginBottom: 4,
+      marginHorizontal: 20,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    vuoto: {
+      textAlign: 'center',
+      color: t.piuSottile,
+      margin: 40,
+      lineHeight: 24,
+      fontSize: 15,
+    },
 
-  // ── Modal reddito ──
-  sfondoModal: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  cardModal: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 24,
-    gap: 12,
-  },
-  titoloModal: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  sottotitoloModal: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 19,
-  },
-  rigaInputReddito: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 8,
-    marginTop: 4,
-    backgroundColor: '#F8FAFC',
-  },
-  euroSign: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#64748B',
-  },
-  inputReddito: {
-    flex: 1,
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  rigaBottoniModal: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 4,
-  },
-  btnAnnullaModal: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-  },
-  testoAnnullaModal: {
-    color: '#64748B',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  btnSalvaModal: {
-    flex: 1,
-    paddingVertical: 13,
-    borderRadius: 10,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-  },
-  testoSalvaModal: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});
+    // ── Modal reddito ──
+    sfondoModal: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    cardModal: {
+      backgroundColor: t.carta,
+      borderRadius: 24,
+      padding: 28,
+      gap: 10,
+    },
+    titoloModal: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    sottotitoloModal: {
+      fontSize: 13,
+      color: t.sottile,
+      lineHeight: 20,
+    },
+    rigaInputReddito: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      borderRadius: 14,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 8,
+      marginTop: 4,
+      backgroundColor: t.sfondoInput,
+    },
+    euroSign: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: t.sottile,
+    },
+    inputReddito: {
+      flex: 1,
+      fontSize: 24,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    rigaBottoniModal: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 4,
+    },
+    btnAnnullaModal: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.bordo,
+      alignItems: 'center',
+    },
+    testoAnnullaModal: {
+      color: t.sottile,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    btnSalvaModal: {
+      flex: 1,
+      paddingVertical: 14,
+      borderRadius: 12,
+      backgroundColor: t.primario,
+      alignItems: 'center',
+    },
+    testoSalvaModal: {
+      color: '#FFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+  });
+}

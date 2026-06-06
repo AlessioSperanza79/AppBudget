@@ -10,6 +10,7 @@ import { formatEuro } from '../../utils/formatters';
 import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
+import { useTema, Tema } from '../../constants/tema';
 
 const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -23,6 +24,9 @@ export default function PianificazioneScreen() {
     applicaRicorrenti,
   } = useFinanceStore();
 
+  const t = useTema();
+  const stili = useMemo(() => creaStili(t), [t]);
+
   const oggi = new Date();
   const [annoTarget, setAnnoTarget] = useState(oggi.getFullYear());
   const [meseTarget, setMeseTarget] = useState(oggi.getMonth());
@@ -33,22 +37,22 @@ export default function PianificazioneScreen() {
   const [mostraConfermaApplica, setMostraConfermaApplica]   = useState(false);
 
   const ricorrenti = useMemo(
-    () => transazioni.filter((t) => t.ricorrente),
+    () => transazioni.filter((tr) => tr.ricorrente),
     [transazioni],
   );
 
   // Modelli senza dataFine: richiedono ancora applicazione manuale
   const ricorrentiManuali = useMemo(
-    () => ricorrenti.filter((t) => !t.dataFine),
+    () => ricorrenti.filter((tr) => !tr.dataFine),
     [ricorrenti],
   );
 
   const totaleEntrate = ricorrenti
-    .filter((t) => t.tipo === 'entrata')
-    .reduce((s, t) => s + t.importo, 0);
+    .filter((tr) => tr.tipo === 'entrata')
+    .reduce((s, tr) => s + tr.importo, 0);
   const totaleUscite = ricorrenti
-    .filter((t) => t.tipo === 'uscita')
-    .reduce((s, t) => s + t.importo, 0);
+    .filter((tr) => tr.tipo === 'uscita')
+    .reduce((s, tr) => s + tr.importo, 0);
 
   const navigaMese = (dir: 1 | -1) => {
     if (dir === 1) {
@@ -58,10 +62,6 @@ export default function PianificazioneScreen() {
       if (meseTarget === 0) { setMeseTarget(11); setAnnoTarget((a) => a - 1); }
       else { setMeseTarget((m) => m - 1); }
     }
-  };
-
-  const confermaElimina = (id: string) => {
-    setModelloDaEliminare(id);
   };
 
   const handleApplica = () => {
@@ -83,15 +83,21 @@ export default function PianificazioneScreen() {
         {/* ── Riepilogo modelli ── */}
         {ricorrenti.length > 0 && (
           <View style={stili.riepilogo}>
-            <View style={[stili.cardRiepilogo, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={stili.etichettaRiepilogo}>Entrate ricorrenti</Text>
-              <Text style={[stili.valoreRiepilogo, { color: '#16A34A' }]}>
+            <View style={[stili.cardRiepilogo, { backgroundColor: t.entrataSfondo }]}>
+              <View style={stili.rigaIconaRiep}>
+                <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
+                <Text style={[stili.etichettaRiepilogo, { color: t.entrata }]}>Entrate ricorrenti</Text>
+              </View>
+              <Text style={[stili.valoreRiepilogo, { color: t.entrata }]}>
                 +{formatEuro(totaleEntrate)}
               </Text>
             </View>
-            <View style={[stili.cardRiepilogo, { backgroundColor: '#FEE2E2' }]}>
-              <Text style={stili.etichettaRiepilogo}>Uscite ricorrenti</Text>
-              <Text style={[stili.valoreRiepilogo, { color: '#DC2626' }]}>
+            <View style={[stili.cardRiepilogo, { backgroundColor: t.uscitaSfondo }]}>
+              <View style={stili.rigaIconaRiep}>
+                <Ionicons name="arrow-down-circle-outline" size={16} color={t.uscita} />
+                <Text style={[stili.etichettaRiepilogo, { color: t.uscita }]}>Uscite ricorrenti</Text>
+              </View>
+              <Text style={[stili.valoreRiepilogo, { color: t.uscita }]}>
                 -{formatEuro(totaleUscite)}
               </Text>
             </View>
@@ -110,14 +116,14 @@ export default function PianificazioneScreen() {
           />
         ) : (
           <View style={{ marginBottom: 16 }}>
-            {ricorrenti.map((t) => (
+            {ricorrenti.map((tr) => (
               <TransactionItem
-                key={t.id}
-                transazione={t}
-                categoria={categorie.find((c) => c.id === t.categoriaId)}
-                istituto={istituti.find((i) => i.id === t.istitutoId)}
-                onModifica={() => { setTransazioneSelezionata(t); setModaleVisibile(true); }}
-                onElimina={() => confermaElimina(t.id)}
+                key={tr.id}
+                transazione={tr}
+                categoria={categorie.find((c) => c.id === tr.categoriaId)}
+                istituto={istituti.find((i) => i.id === tr.istitutoId)}
+                onModifica={() => { setTransazioneSelezionata(tr); setModaleVisibile(true); }}
+                onElimina={() => setModelloDaEliminare(tr.id)}
               />
             ))}
           </View>
@@ -126,18 +132,25 @@ export default function PianificazioneScreen() {
         {/* ── Card applica al mese (solo per modelli senza data fine automatica) ── */}
         {ricorrentiManuali.length > 0 && (
           <View style={stili.cardApplica}>
-            <Text style={stili.titoloApplica}>Applica al mese</Text>
-            <Text style={stili.descrizioneApplica}>
-              {ricorrentiManuali.length} modell{ricorrentiManuali.length === 1 ? 'o senza' : 'i senza'} data di fine automatica — crea le transazioni per il mese selezionato
-            </Text>
+            <View style={stili.intestazioneApplica}>
+              <View style={stili.cerchioApplicaIcon}>
+                <Ionicons name="calendar-outline" size={18} color={t.primario} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={stili.titoloApplica}>Applica al mese</Text>
+                <Text style={stili.descrizioneApplica}>
+                  {ricorrentiManuali.length} modell{ricorrentiManuali.length === 1 ? 'o' : 'i'} senza data di fine automatica
+                </Text>
+              </View>
+            </View>
 
             <View style={stili.navigatore}>
-              <TouchableOpacity onPress={() => navigaMese(-1)} hitSlop={10}>
-                <Ionicons name="chevron-back" size={20} color="#475569" />
+              <TouchableOpacity onPress={() => navigaMese(-1)} hitSlop={10} style={stili.btnNav}>
+                <Ionicons name="chevron-back" size={18} color={t.sottile} />
               </TouchableOpacity>
               <Text style={stili.labelMese}>{MESI[meseTarget]} {annoTarget}</Text>
-              <TouchableOpacity onPress={() => navigaMese(1)} hitSlop={10}>
-                <Ionicons name="chevron-forward" size={20} color="#475569" />
+              <TouchableOpacity onPress={() => navigaMese(1)} hitSlop={10} style={stili.btnNav}>
+                <Ionicons name="chevron-forward" size={18} color={t.sottile} />
               </TouchableOpacity>
             </View>
 
@@ -160,8 +173,9 @@ export default function PianificazioneScreen() {
       <TouchableOpacity
         style={stili.fab}
         onPress={() => { setTransazioneSelezionata(undefined); setModaleVisibile(true); }}
+        activeOpacity={0.85}
       >
-        <Ionicons name="add" size={30} color="#FFF" />
+        <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 
       <TransactionForm
@@ -185,7 +199,7 @@ export default function PianificazioneScreen() {
         <View style={stili.sfondoModal}>
           <View style={stili.cartaModal}>
             <View style={stili.cerchioElimina}>
-              <Ionicons name="trash-outline" size={28} color="#DC2626" />
+              <Ionicons name="trash-outline" size={26} color={t.uscita} />
             </View>
             <Text style={stili.titoloModal}>Elimina modello</Text>
             <Text style={stili.testoModal}>
@@ -219,7 +233,7 @@ export default function PianificazioneScreen() {
         <View style={stili.sfondoModal}>
           <View style={stili.cartaModal}>
             <View style={stili.cerchioApplica}>
-              <Ionicons name="checkmark-circle-outline" size={28} color="#2563EB" />
+              <Ionicons name="checkmark-circle-outline" size={26} color={t.primario} />
             </View>
             <Text style={stili.titoloModal}>Applica ricorrenti</Text>
             <Text style={stili.testoModal}>
@@ -246,179 +260,223 @@ export default function PianificazioneScreen() {
   );
 }
 
-const stili = StyleSheet.create({
-  contenitore: { flex: 1, backgroundColor: '#F8FAFC' },
+function creaStili(t: Tema) {
+  return StyleSheet.create({
+    contenitore: {
+      flex: 1,
+      backgroundColor: t.sfondo,
+    },
 
-  // ── Riepilogo sommario ──
-  riepilogo: {
-    flexDirection: 'row',
-    gap: 8,
-    margin: 16,
-    marginBottom: 4,
-  },
-  cardRiepilogo: {
-    flex: 1,
-    borderRadius: 12,
-    padding: 12,
-    gap: 4,
-  },
-  etichettaRiepilogo: { fontSize: 11, color: '#64748B', fontWeight: '500' },
-  valoreRiepilogo:    { fontSize: 15, fontWeight: '700' },
+    // ── Riepilogo sommario ──
+    riepilogo: {
+      flexDirection: 'row',
+      gap: 10,
+      margin: 16,
+      marginBottom: 4,
+    },
+    cardRiepilogo: {
+      flex: 1,
+      borderRadius: 16,
+      padding: 14,
+      gap: 6,
+    },
+    rigaIconaRiep: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    etichettaRiepilogo: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    valoreRiepilogo: {
+      fontSize: 18,
+      fontWeight: '800',
+    },
 
-  // ── Etichetta sezione ──
-  sezioneLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#64748B',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginHorizontal: 16,
-    marginTop: 12,
-    marginBottom: 4,
-  },
+    // ── Etichetta sezione ──
+    sezioneLabel: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: t.piuSottile,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      marginHorizontal: 16,
+      marginTop: 16,
+      marginBottom: 4,
+    },
 
-  // ── Card applica ──
-  cardApplica: {
-    backgroundColor: '#FFF',
-    margin: 16,
-    borderRadius: 20,
-    padding: 20,
-    gap: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  titoloApplica: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  descrizioneApplica: {
-    fontSize: 13,
-    color: '#64748B',
-    lineHeight: 19,
-  },
-  navigatore: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F1F5F9',
-    borderRadius: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-  },
-  labelMese: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0F172A',
-  },
-  btnApplica: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#2563EB',
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  testoBtnApplica: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
+    // ── Card applica ──
+    cardApplica: {
+      backgroundColor: t.carta,
+      margin: 16,
+      borderRadius: 20,
+      padding: 18,
+      gap: 14,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.07,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    intestazioneApplica: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    cerchioApplicaIcon: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.primarioSfondo,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    titoloApplica: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    descrizioneApplica: {
+      fontSize: 12,
+      color: t.sottile,
+      marginTop: 2,
+    },
+    navigatore: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: t.superfice,
+      borderRadius: 12,
+      paddingVertical: 10,
+      paddingHorizontal: 10,
+      borderWidth: 1,
+      borderColor: t.bordoSottile,
+    },
+    btnNav: {
+      width: 32,
+      height: 32,
+      borderRadius: 8,
+      backgroundColor: t.carta,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: t.bordo,
+    },
+    labelMese: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    btnApplica: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      backgroundColor: t.primario,
+      borderRadius: 14,
+      paddingVertical: 14,
+    },
+    testoBtnApplica: {
+      color: '#FFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
 
-  // ── Modal conferme ──
-  sfondoModal: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cartaModal: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 24,
-    width: '80%',
-    alignItems: 'center',
-    gap: 12,
-  },
-  cerchioElimina: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#FEE2E2',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  cerchioApplica: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#DBEAFE',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  titoloModal: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#0F172A',
-    textAlign: 'center',
-  },
-  testoModal: {
-    fontSize: 14,
-    color: '#64748B',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  rigaBtnModal: {
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 4,
-    width: '100%',
-  },
-  btnModal: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  btnAnnulla: {
-    backgroundColor: '#F1F5F9',
-  },
-  btnElimina: {
-    backgroundColor: '#DC2626',
-  },
-  btnApplicaModal: {
-    backgroundColor: '#2563EB',
-  },
-  testoAnnulla: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  testoElimina: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#FFF',
-  },
+    // ── Modal conferme ──
+    sfondoModal: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 24,
+    },
+    cartaModal: {
+      backgroundColor: t.carta,
+      borderRadius: 24,
+      padding: 28,
+      width: '100%',
+      alignItems: 'center',
+      gap: 10,
+    },
+    cerchioElimina: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.uscitaSfondo,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    cerchioApplica: {
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.primarioSfondo,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    titoloModal: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: t.titolo,
+      textAlign: 'center',
+    },
+    testoModal: {
+      fontSize: 14,
+      color: t.sottile,
+      textAlign: 'center',
+      lineHeight: 21,
+    },
+    rigaBtnModal: {
+      flexDirection: 'row',
+      gap: 10,
+      marginTop: 6,
+      width: '100%',
+    },
+    btnModal: {
+      flex: 1,
+      paddingVertical: 13,
+      borderRadius: 12,
+      alignItems: 'center',
+    },
+    btnAnnulla: {
+      backgroundColor: t.superfice,
+      borderWidth: 1,
+      borderColor: t.bordo,
+    },
+    btnElimina: {
+      backgroundColor: t.uscita,
+    },
+    btnApplicaModal: {
+      backgroundColor: t.primario,
+    },
+    testoAnnulla: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: t.sottile,
+    },
+    testoElimina: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#FFF',
+    },
 
-  // ── FAB ──
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: '#7C3AED',
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 8,
-  },
-});
+    // ── FAB ──
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.viola,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: t.viola,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      elevation: 8,
+    },
+  });
+}

@@ -1,5 +1,5 @@
 // ── Schermata Categorie + Conti: CRUD per categorie e istituti bancari ──
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
   Modal, StyleSheet,
@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
+import { useTema, Tema } from '../../constants/tema';
 
 const PALETTE: string[] = [
   '#2E7D32', '#66BB6A', '#E53935', '#2563EB',
@@ -28,25 +29,24 @@ export default function CategorieScreen() {
     istituti, aggiungiIstituto, rinominaIstituto, eliminaIstituto,
   } = useFinanceStore();
 
+  const t = useTema();
+  const stili = useMemo(() => creaStili(t), [t]);
+
   const [sezione, setSezione] = useState<Sezione>('categorie');
 
-  // ── Stato modale categorie ──
   const [modaleCategoria, setModaleCategoria]         = useState(false);
   const [nomeCategoria, setNomeCategoria]             = useState('');
   const [coloreSelezionato, setColoreSelezionato]     = useState(PALETTE[0]);
   const [tipoSelezionato, setTipoSelezionato]         = useState<TipoCategoria>('variabile');
   const [categoriaInModifica, setCategoriaInModifica] = useState<Categoria | undefined>();
 
-  // ── Stato modale istituti ──
   const [modaleIstituto, setModaleIstituto]           = useState(false);
   const [nomeIstituto, setNomeIstituto]               = useState('');
   const [istitutoInModifica, setIstitutoInModifica]   = useState<Istituto | undefined>();
 
-  // ── Stato modale conferma eliminazione ──
   const [catDaEliminare, setCatDaEliminare]           = useState<Categoria | undefined>();
   const [istDaEliminare, setIstDaEliminare]           = useState<Istituto | undefined>();
 
-  // ── Gestori categorie ──
   const apriNuovaCategoria = () => {
     setCategoriaInModifica(undefined);
     setNomeCategoria('');
@@ -77,11 +77,6 @@ export default function CategorieScreen() {
     setModaleCategoria(false);
   };
 
-  const confermaEliminaCategoria = (cat: Categoria) => {
-    setCatDaEliminare(cat);
-  };
-
-  // ── Gestori istituti ──
   const apriNuovoIstituto = () => {
     setIstitutoInModifica(undefined);
     setNomeIstituto('');
@@ -103,10 +98,6 @@ export default function CategorieScreen() {
       aggiungiIstituto(nome);
     }
     setModaleIstituto(false);
-  };
-
-  const confermaEliminaIstituto = (ist: Istituto) => {
-    setIstDaEliminare(ist);
   };
 
   return (
@@ -132,28 +123,30 @@ export default function CategorieScreen() {
         <FlatList
           data={categorie}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 12 }}
+          contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => {
-            const tipo = TIPI.find((t) => t.key === item.tipo) ?? TIPI[1];
+            const tipo = TIPI.find((tp) => tp.key === item.tipo) ?? TIPI[1];
             return (
               <View style={stili.riga}>
-                <View style={[stili.punto, { backgroundColor: item.colore }]} />
+                <View style={[stili.avatarCategoria, { backgroundColor: item.colore }]}>
+                  <Text style={stili.lettAvatar}>{item.nome.charAt(0).toUpperCase()}</Text>
+                </View>
                 <Text style={stili.nome}>{item.nome}</Text>
                 <View style={[stili.badgeTipo, { backgroundColor: tipo.colore + '18' }]}>
                   <Text style={[stili.testoBadgeTipo, { color: tipo.colore }]}>{tipo.label}</Text>
                 </View>
                 <TouchableOpacity onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8}>
-                  <Ionicons name="pencil-outline" size={18} color="#2563EB" />
+                  <Ionicons name="pencil-outline" size={18} color={t.primario} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => confermaEliminaCategoria(item)} style={stili.btn} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={18} color="#C62828" />
+                <TouchableOpacity onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8}>
+                  <Ionicons name="trash-outline" size={18} color={t.uscita} />
                 </TouchableOpacity>
               </View>
             );
           }}
           ListFooterComponent={
             <TouchableOpacity style={stili.btnAggiungi} onPress={apriNuovaCategoria}>
-              <Ionicons name="add-circle-outline" size={20} color="#2563EB" />
+              <Ionicons name="add-circle-outline" size={20} color={t.primario} />
               <Text style={stili.testoAggiungi}>Aggiungi categoria</Text>
             </TouchableOpacity>
           }
@@ -165,22 +158,24 @@ export default function CategorieScreen() {
         <FlatList
           data={istituti}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ padding: 12 }}
+          contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
             <View style={stili.riga}>
-              <Ionicons name="business-outline" size={18} color="#555" />
+              <View style={[stili.avatarCategoria, { backgroundColor: t.primario }]}>
+                <Ionicons name="business-outline" size={16} color="#FFF" />
+              </View>
               <Text style={stili.nome}>{item.nome}</Text>
               <TouchableOpacity onPress={() => apriModificaIstituto(item)} style={stili.btn} hitSlop={8}>
-                <Ionicons name="pencil-outline" size={18} color="#2563EB" />
+                <Ionicons name="pencil-outline" size={18} color={t.primario} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => confermaEliminaIstituto(item)} style={stili.btn} hitSlop={8}>
-                <Ionicons name="trash-outline" size={18} color="#C62828" />
+              <TouchableOpacity onPress={() => setIstDaEliminare(item)} style={stili.btn} hitSlop={8}>
+                <Ionicons name="trash-outline" size={18} color={t.uscita} />
               </TouchableOpacity>
             </View>
           )}
           ListFooterComponent={
             <TouchableOpacity style={stili.btnAggiungi} onPress={apriNuovoIstituto}>
-              <Ionicons name="add-circle-outline" size={20} color="#2563EB" />
+              <Ionicons name="add-circle-outline" size={20} color={t.primario} />
               <Text style={stili.testoAggiungi}>Aggiungi istituto</Text>
             </TouchableOpacity>
           }
@@ -201,6 +196,7 @@ export default function CategorieScreen() {
               value={nomeCategoria}
               onChangeText={setNomeCategoria}
               placeholder="Es. Viaggi"
+              placeholderTextColor={t.segnaposto}
               autoFocus
               returnKeyType="done"
             />
@@ -266,6 +262,7 @@ export default function CategorieScreen() {
               value={nomeIstituto}
               onChangeText={setNomeIstituto}
               placeholder="Es. Banca Sella"
+              placeholderTextColor={t.segnaposto}
               autoFocus
               returnKeyType="done"
             />
@@ -283,15 +280,15 @@ export default function CategorieScreen() {
 
       {/* ── Modal conferma elimina categoria ── */}
       {catDaEliminare && (() => {
-        const inUso = transazioni.some((t) => t.categoriaId === catDaEliminare.id);
-        const nTrans = transazioni.filter((t) => t.categoriaId === catDaEliminare.id).length;
+        const inUso  = transazioni.some((tr) => tr.categoriaId === catDaEliminare.id);
+        const nTrans = transazioni.filter((tr) => tr.categoriaId === catDaEliminare.id).length;
         return (
           <Modal visible animationType="fade" transparent>
             <View style={stili.sfondoModal}>
               <View style={stili.cardModal}>
                 <View style={stili.rigaIconaElimina}>
                   <View style={stili.cerchioElimina}>
-                    <Ionicons name="trash-outline" size={22} color="#C62828" />
+                    <Ionicons name="trash-outline" size={22} color={t.uscita} />
                   </View>
                   <Text style={stili.titoloModal}>Elimina categoria</Text>
                 </View>
@@ -313,7 +310,7 @@ export default function CategorieScreen() {
                   </TouchableOpacity>
                   {!inUso && (
                     <TouchableOpacity
-                      style={[stili.btnConferma, { backgroundColor: '#C62828' }]}
+                      style={[stili.btnConferma, { backgroundColor: t.uscita }]}
                       onPress={() => { eliminaCategoria(catDaEliminare.id); setCatDaEliminare(undefined); }}
                     >
                       <Text style={stili.testoConferma}>Elimina</Text>
@@ -328,15 +325,15 @@ export default function CategorieScreen() {
 
       {/* ── Modal conferma elimina istituto ── */}
       {istDaEliminare && (() => {
-        const inUso = transazioni.some((t) => t.istitutoId === istDaEliminare.id);
-        const nTrans = transazioni.filter((t) => t.istitutoId === istDaEliminare.id).length;
+        const inUso  = transazioni.some((tr) => tr.istitutoId === istDaEliminare.id);
+        const nTrans = transazioni.filter((tr) => tr.istitutoId === istDaEliminare.id).length;
         return (
           <Modal visible animationType="fade" transparent>
             <View style={stili.sfondoModal}>
               <View style={stili.cardModal}>
                 <View style={stili.rigaIconaElimina}>
                   <View style={stili.cerchioElimina}>
-                    <Ionicons name="trash-outline" size={22} color="#C62828" />
+                    <Ionicons name="trash-outline" size={22} color={t.uscita} />
                   </View>
                   <Text style={stili.titoloModal}>Elimina conto</Text>
                 </View>
@@ -358,7 +355,7 @@ export default function CategorieScreen() {
                   </TouchableOpacity>
                   {!inUso && (
                     <TouchableOpacity
-                      style={[stili.btnConferma, { backgroundColor: '#C62828' }]}
+                      style={[stili.btnConferma, { backgroundColor: t.uscita }]}
                       onPress={() => { eliminaIstituto(istDaEliminare.id); setIstDaEliminare(undefined); }}
                     >
                       <Text style={stili.testoConferma}>Elimina</Text>
@@ -375,225 +372,238 @@ export default function CategorieScreen() {
   );
 }
 
-const stili = StyleSheet.create({
-  contenitore: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
+function creaStili(t: Tema) {
+  return StyleSheet.create({
+    contenitore: {
+      flex: 1,
+      backgroundColor: t.sfondo,
+    },
 
-  // ── Toggle ──
-  toggleContenitore: {
-    flexDirection: 'row',
-    backgroundColor: '#E0E4EA',
-    borderRadius: 12,
-    margin: 16,
-    marginBottom: 4,
-    padding: 4,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  tabAttivo: {
-    backgroundColor: '#FFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  testoTab: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#888',
-  },
-  testoTabAttivo: {
-    color: '#1A1A2E',
-    fontWeight: '700',
-  },
+    // ── Toggle ──
+    toggleContenitore: {
+      flexDirection: 'row',
+      backgroundColor: t.toggleSfondo,
+      borderRadius: 12,
+      margin: 16,
+      marginBottom: 4,
+      padding: 4,
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: 9,
+      borderRadius: 9,
+      alignItems: 'center',
+    },
+    tabAttivo: {
+      backgroundColor: t.toggleAttivo,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+    testoTab: {
+      fontSize: 14,
+      fontWeight: '500',
+      color: t.sottile,
+    },
+    testoTabAttivo: {
+      color: t.titolo,
+      fontWeight: '700',
+    },
 
-  // ── Lista ──
-  riga: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 8,
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 1,
-  },
-  punto: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    flexShrink: 0,
-  },
-  nome: {
-    flex: 1,
-    fontSize: 15,
-    color: '#222',
-  },
-  badgeTipo: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  testoBadgeTipo: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  btn: {
-    padding: 4,
-  },
-  btnAggiungi: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: 16,
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#2563EB',
-    backgroundColor: '#EEF4FF',
-  },
-  testoAggiungi: {
-    color: '#2563EB',
-    fontSize: 15,
-    fontWeight: '600',
-  },
+    // ── Lista ──
+    riga: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: t.carta,
+      borderRadius: 16,
+      padding: 14,
+      marginBottom: 8,
+      gap: 10,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 1,
+    },
+    avatarCategoria: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexShrink: 0,
+    },
+    lettAvatar: {
+      fontSize: 14,
+      fontWeight: '800',
+      color: '#FFFFFF',
+    },
+    nome: {
+      flex: 1,
+      fontSize: 15,
+      color: t.titolo,
+      fontWeight: '500',
+    },
+    badgeTipo: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    testoBadgeTipo: {
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    btn: {
+      padding: 4,
+    },
+    btnAggiungi: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      padding: 16,
+      marginTop: 4,
+      borderRadius: 14,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: t.primario,
+      backgroundColor: t.primarioSfondo,
+    },
+    testoAggiungi: {
+      color: t.primario,
+      fontSize: 15,
+      fontWeight: '600',
+    },
 
-  // ── Modal ──
-  sfondoModal: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    padding: 24,
-  },
-  cardModal: {
-    backgroundColor: '#FFF',
-    borderRadius: 16,
-    padding: 24,
-  },
-  titoloModal: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 8,
-  },
-  etichetta: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#777',
-    marginTop: 14,
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#DDD',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 15,
-    color: '#222',
-  },
+    // ── Modal ──
+    sfondoModal: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      padding: 24,
+    },
+    cardModal: {
+      backgroundColor: t.carta,
+      borderRadius: 24,
+      padding: 24,
+    },
+    titoloModal: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: t.titolo,
+      marginBottom: 4,
+    },
+    etichetta: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: t.piuSottile,
+      marginTop: 16,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    input: {
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      borderRadius: 12,
+      padding: 13,
+      fontSize: 15,
+      color: t.titolo,
+      backgroundColor: t.sfondoInput,
+    },
 
-  // ── Tipo selector ──
-  selectorTipo: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  btnTipo: {
-    flex: 1,
-    paddingVertical: 9,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-  },
-  testoTipo: {
-    fontSize: 12,
-    color: '#888',
-    fontWeight: '500',
-  },
+    // ── Tipo selector ──
+    selectorTipo: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    btnTipo: {
+      flex: 1,
+      paddingVertical: 10,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      alignItems: 'center',
+      backgroundColor: t.sfondoInput,
+    },
+    testoTipo: {
+      fontSize: 12,
+      color: t.sottile,
+      fontWeight: '500',
+    },
 
-  // ── Palette colori ──
-  griglia: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginTop: 4,
-  },
-  campione: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-  },
-  campioneAttivo: {
-    borderWidth: 3,
-    borderColor: '#222',
-  },
+    // ── Palette colori ──
+    griglia: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 10,
+      marginTop: 4,
+    },
+    campione: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+    },
+    campioneAttivo: {
+      borderWidth: 3,
+      borderColor: t.titolo,
+    },
 
-  // ── Conferma elimina ──
-  rigaIconaElimina: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    marginBottom: 8,
-  },
-  cerchioElimina: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#FEE2E2',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  testoModal: {
-    fontSize: 14,
-    color: '#475569',
-    lineHeight: 21,
-    marginTop: 8,
-    marginBottom: 4,
-  },
+    // ── Conferma elimina ──
+    rigaIconaElimina: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      marginBottom: 10,
+    },
+    cerchioElimina: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: t.uscitaSfondo,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    testoModal: {
+      fontSize: 14,
+      color: t.sottile,
+      lineHeight: 21,
+      marginTop: 4,
+      marginBottom: 4,
+    },
 
-  // ── Bottoni modal ──
-  rigaBottoni: {
-    flexDirection: 'row',
-    gap: 12,
-    marginTop: 20,
-  },
-  btnAnnulla: {
-    flex: 1,
-    padding: 13,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#DDD',
-    alignItems: 'center',
-  },
-  testoAnnulla: {
-    color: '#555',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  btnConferma: {
-    flex: 1,
-    padding: 13,
-    borderRadius: 8,
-    backgroundColor: '#2563EB',
-    alignItems: 'center',
-  },
-  testoConferma: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-});
+    // ── Bottoni modal ──
+    rigaBottoni: {
+      flexDirection: 'row',
+      gap: 12,
+      marginTop: 20,
+    },
+    btnAnnulla: {
+      flex: 1,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: t.bordo,
+      alignItems: 'center',
+    },
+    testoAnnulla: {
+      color: t.sottile,
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    btnConferma: {
+      flex: 1,
+      padding: 14,
+      borderRadius: 12,
+      backgroundColor: t.primario,
+      alignItems: 'center',
+    },
+    testoConferma: {
+      color: '#FFF',
+      fontSize: 15,
+      fontWeight: '700',
+    },
+  });
+}
