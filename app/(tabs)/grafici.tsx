@@ -20,7 +20,8 @@ export default function GraficiScreen() {
   const stili = useMemo(() => creaStili(t), [t]);
 
   const { width: LARGHEZZA } = useWindowDimensions();
-  const LARGHEZZA_CHART = LARGHEZZA - 64;
+  // margini sezione (16×2=32) + padding sezione (20×2=40) + asse-y gifted-charts (35) = 107
+  const LARGHEZZA_CHART = LARGHEZZA - 108;
 
   const [vista, setVista] = useState<Vista>('mensile');
   const [annoSel, setAnnoSel] = useState(new Date().getFullYear());
@@ -356,6 +357,7 @@ export default function GraficiScreen() {
                 barWidth={26}
                 barBorderRadius={4}
                 yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
+                yAxisWidth={35}
                 noOfSections={4}
                 hideRules
                 width={LARGHEZZA_CHART}
@@ -370,9 +372,10 @@ export default function GraficiScreen() {
               <Text style={stili.titoloSezione}>Spesa settimanale — {MESI[meseSel]}</Text>
               <BarChart
                 data={datiSettimanali}
-                barWidth={Math.floor((LARGHEZZA_CHART - 60) / 4)}
+                barWidth={Math.floor((LARGHEZZA_CHART - 50) / 4)}
                 barBorderRadius={8}
                 yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
+                yAxisWidth={35}
                 noOfSections={4}
                 hideRules
                 width={LARGHEZZA_CHART}
@@ -503,6 +506,7 @@ export default function GraficiScreen() {
                 barWidth={28}
                 barBorderRadius={4}
                 yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
+                yAxisWidth={35}
                 noOfSections={4}
                 hideRules
                 width={LARGHEZZA_CHART}

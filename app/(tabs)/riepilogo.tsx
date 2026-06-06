@@ -297,7 +297,8 @@ export default function RiepilogoScreen() {
             <Text style={stili.titoloSparkline}>Trend saldo — ultimi 6 mesi</Text>
             <LineChart
               data={ultimi6MesiSaldi}
-              width={LARGHEZZA - 96}
+              width={LARGHEZZA - 104}
+              yAxisWidth={35}
               height={90}
               areaChart
               color={t.primario}
