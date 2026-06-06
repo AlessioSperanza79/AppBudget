@@ -1,70 +1,47 @@
-import { SymbolView } from 'expo-symbols';
-import { Link, Tabs } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
+import { ComponentProps } from 'react';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
-import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
+const SCHEDE: {
+  nome: string;
+  titolo: string;
+  icona: IoniconName;
+  colore: string;
+}[] = [
+  { nome: 'riepilogo',      titolo: 'Riepilogo',   icona: 'wallet',            colore: '#16A34A' },
+  { nome: 'index',          titolo: 'Transazioni', icona: 'list',              colore: '#2563EB' },
+  { nome: 'grafici',        titolo: 'Grafici',      icona: 'pie-chart',         colore: '#7C3AED' },
+  { nome: 'analisi',        titolo: 'Analisi',      icona: 'analytics',         colore: '#F97316' },
+  { nome: 'pianificazione', titolo: 'Pianifica',    icona: 'calendar-outline',  colore: '#0891B2' },
+  { nome: 'categorie',      titolo: 'Categorie',   icona: 'pricetags',         colore: '#DC2626' },
+];
+
+export default function TabLayout() {
   return (
     <Tabs
+      initialRouteName="riepilogo"
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        // Disable the static render of the header on web
-        // to prevent a hydration error in React Navigation v6.
+        tabBarInactiveTintColor: '#94A3B8',
         headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'info.circle', android: 'info', web: 'info' }}
-                    size={25}
-                    tintColor={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{
-                ios: 'chevron.left.forwardslash.chevron.right',
-                android: 'code',
-                web: 'code',
-              }}
-              tintColor={color}
-              size={28}
-            />
-          ),
-        }}
-      />
+      }}
+    >
+      {SCHEDE.map(({ nome, titolo, icona, colore }) => (
+        <Tabs.Screen
+          key={nome}
+          name={nome}
+          options={{
+            title: titolo,
+            tabBarActiveTintColor: colore,
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name={icona} size={size} color={color} />
+            ),
+          }}
+        />
+      ))}
     </Tabs>
   );
 }
