@@ -303,29 +303,27 @@ export default function AnalisiScreen() {
         {/* ── Card saldo / entrate / uscite ── */}
         <View style={stili.rigaCard}>
           <View style={[stili.card, { backgroundColor: t.entrataSfondo }]}>
-            <View style={stili.rigaIconCard}>
-              <Ionicons name="arrow-up-circle-outline" size={14} color={t.entrata} />
-              <Text style={[stili.etichettaCard, { color: t.entrata }]}>Entrate</Text>
-            </View>
-            <Text style={[stili.valoreCard, { color: t.entrata }]}>{formatEuro(totaleEntrate)}</Text>
+            <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
+            <Text style={[stili.etichettaCard, { color: t.entrata }]}>Entrate</Text>
+            <Text style={[stili.valoreCard, { color: t.entrata }]} numberOfLines={1}>
+              {formatEuro(totaleEntrate)}
+            </Text>
           </View>
           <View style={[stili.card, { backgroundColor: t.uscitaSfondo }]}>
-            <View style={stili.rigaIconCard}>
-              <Ionicons name="arrow-down-circle-outline" size={14} color={t.uscita} />
-              <Text style={[stili.etichettaCard, { color: t.uscita }]}>Uscite</Text>
-            </View>
-            <Text style={[stili.valoreCard, { color: t.uscita }]}>{formatEuro(totaleUscite)}</Text>
+            <Ionicons name="arrow-down-circle-outline" size={16} color={t.uscita} />
+            <Text style={[stili.etichettaCard, { color: t.uscita }]}>Uscite</Text>
+            <Text style={[stili.valoreCard, { color: t.uscita }]} numberOfLines={1}>
+              {formatEuro(totaleUscite)}
+            </Text>
           </View>
           <View style={[stili.card, { backgroundColor: saldo >= 0 ? t.primarioSfondo : t.arancioSfondo }]}>
-            <View style={stili.rigaIconCard}>
-              <Ionicons
-                name={saldo >= 0 ? 'trending-up-outline' : 'trending-down-outline'}
-                size={14}
-                color={saldo >= 0 ? t.primario : t.arancio}
-              />
-              <Text style={[stili.etichettaCard, { color: saldo >= 0 ? t.primario : t.arancio }]}>Saldo</Text>
-            </View>
-            <Text style={[stili.valoreCard, { color: saldo >= 0 ? t.primario : t.arancio }]}>
+            <Ionicons
+              name={saldo >= 0 ? 'trending-up-outline' : 'trending-down-outline'}
+              size={16}
+              color={saldo >= 0 ? t.primario : t.arancio}
+            />
+            <Text style={[stili.etichettaCard, { color: saldo >= 0 ? t.primario : t.arancio }]}>Saldo</Text>
+            <Text style={[stili.valoreCard, { color: saldo >= 0 ? t.primario : t.arancio }]} numberOfLines={1}>
               {formatEuro(saldo)}
             </Text>
           </View>
@@ -820,28 +818,24 @@ function creaStili(t: Tema) {
     // ── Cards totali ──
     rigaCard: {
       flexDirection: 'row',
-      marginHorizontal: 16,
+      paddingHorizontal: 16,
       gap: 8,
       marginBottom: 8,
     },
     card: {
       flex: 1,
-      borderRadius: 14,
+      borderRadius: 16,
       padding: 12,
-      gap: 4,
-    },
-    rigaIconCard: {
-      flexDirection: 'row',
       alignItems: 'center',
       gap: 4,
     },
     etichettaCard: {
-      fontSize: 10,
+      fontSize: 11,
       fontWeight: '600',
     },
     valoreCard: {
       fontSize: 13,
-      fontWeight: '800',
+      fontWeight: '700',
     },
 
     // ── Card metriche ──

@@ -285,6 +285,7 @@ export default function GraficiScreen() {
                     donut
                     radius={90}
                     innerRadius={54}
+                    innerCircleColor={t.carta}
                     centerLabelComponent={() => (
                       <View style={stili.centroTorta}>
                         <Text style={stili.centroTortaTitolo}>Totale</Text>
@@ -525,6 +526,7 @@ export default function GraficiScreen() {
                   donut
                   radius={90}
                   innerRadius={54}
+                  innerCircleColor={t.carta}
                   centerLabelComponent={() => (
                     <View style={stili.centroTorta}>
                       <Text style={stili.centroTortaTitolo}>Totale</Text>
