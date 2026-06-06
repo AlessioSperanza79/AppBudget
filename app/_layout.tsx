@@ -6,6 +6,7 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { useFinanceStore } from '@/store/useFinanceStore';
+import { usePreferenze } from '@/store/usePreferenze';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -41,9 +42,11 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
+  const pref = usePreferenze((s) => s.tema);
+  const isDark = pref === 'scuro' || (pref === 'sistema' && colorScheme === 'dark');
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
       <Stack>
         {/* headerShown: false → i singoli schermi gestiscono i propri header */}
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

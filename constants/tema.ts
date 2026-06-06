@@ -1,4 +1,5 @@
 import { useColorScheme } from 'react-native';
+import { usePreferenze } from '../store/usePreferenze';
 
 export const luce = {
   sfondo:         '#EEF2F7',
@@ -58,5 +59,7 @@ export type Tema = typeof luce;
 
 export function useTema(): Tema {
   const schema = useColorScheme();
-  return schema === 'dark' ? buio : luce;
+  const pref = usePreferenze((s) => s.tema);
+  const isDark = pref === 'scuro' || (pref === 'sistema' && schema === 'dark');
+  return isDark ? buio : luce;
 }

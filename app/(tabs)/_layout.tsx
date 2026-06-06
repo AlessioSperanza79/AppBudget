@@ -2,8 +2,10 @@ import { ComponentProps } from 'react';
 import { Platform, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/components/useColorScheme';
 import { luce, buio } from '@/constants/tema';
+import { usePreferenze } from '@/store/usePreferenze';
 
 type IoniconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -18,7 +20,10 @@ const SCHEDE: { nome: string; titolo: string; icona: IoniconName }[] = [
 
 export default function TabLayout() {
   const schema = useColorScheme();
-  const t = schema === 'dark' ? buio : luce;
+  const pref = usePreferenze((s) => s.tema);
+  const isDark = pref === 'scuro' || (pref === 'sistema' && schema === 'dark');
+  const t = isDark ? buio : luce;
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -33,8 +38,8 @@ export default function TabLayout() {
           borderTopColor: t.bordo,
           elevation: 0,
           shadowOpacity: 0,
-          height: Platform.OS === 'ios' ? 80 : 58,
-          paddingBottom: Platform.OS === 'ios' ? 22 : 6,
+          height: Platform.OS === 'ios' ? 80 : 58 + insets.bottom,
+          paddingBottom: Platform.OS === 'ios' ? 22 : insets.bottom + 6,
           paddingTop: 8,
         },
         tabBarLabelStyle: {

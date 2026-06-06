@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Dimensions, Platform, Modal, TextInput,
+  Platform, Modal, TextInput, useWindowDimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LineChart } from 'react-native-gifted-charts';
@@ -11,6 +11,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatEuro } from '../../utils/formatters';
 import TransactionItem from '../../components/TransactionItem';
 import { useTema, Tema } from '../../constants/tema';
+import { usePreferenze, PreferenzaTema } from '../../store/usePreferenze';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -18,8 +19,6 @@ const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
 ];
-
-const LARGHEZZA = Dimensions.get('window').width;
 
 function RigaFlusso({
   etichetta, importo, reddito, colore,
@@ -53,6 +52,15 @@ export default function RiepilogoScreen() {
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
+
+  const { width: LARGHEZZA } = useWindowDimensions();
+
+  const { tema: prefTema, setTema } = usePreferenze();
+  const iconaTema = prefTema === 'chiaro' ? 'sunny-outline' : prefTema === 'scuro' ? 'moon-outline' : 'contrast-outline';
+  const ciclaTema = () => {
+    const ciclo: Record<PreferenzaTema, PreferenzaTema> = { sistema: 'chiaro', chiaro: 'scuro', scuro: 'sistema' };
+    setTema(ciclo[prefTema]);
+  };
 
   const [periodo, setPeriodo] = useState<Periodo>('mensile');
   const [dataCorrente, setDataCorrente] = useState(new Date());
@@ -163,18 +171,23 @@ export default function RiepilogoScreen() {
 
         {/* ── Toggle Mensile / Annuale + Navigatore ── */}
         <View style={stili.controlliContenitore}>
-          <View style={stili.toggle}>
-            {(['mensile', 'annuale'] as Periodo[]).map((p) => (
-              <TouchableOpacity
-                key={p}
-                style={[stili.toggleBtn, periodo === p && stili.toggleBtnAttivo]}
-                onPress={() => setPeriodo(p)}
-              >
-                <Text style={[stili.toggleTesto, periodo === p && stili.toggleTestoAttivo]}>
-                  {p === 'mensile' ? 'Mensile' : 'Annuale'}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View style={stili.rigaToggle}>
+            <View style={[stili.toggle, { flex: 1 }]}>
+              {(['mensile', 'annuale'] as Periodo[]).map((p) => (
+                <TouchableOpacity
+                  key={p}
+                  style={[stili.toggleBtn, periodo === p && stili.toggleBtnAttivo]}
+                  onPress={() => setPeriodo(p)}
+                >
+                  <Text style={[stili.toggleTesto, periodo === p && stili.toggleTestoAttivo]}>
+                    {p === 'mensile' ? 'Mensile' : 'Annuale'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity onPress={ciclaTema} style={stili.btnTema} hitSlop={8}>
+              <Ionicons name={iconaTema} size={20} color={t.sottile} />
+            </TouchableOpacity>
           </View>
 
           <View style={stili.navigatore}>
@@ -376,6 +389,24 @@ function creaStili(t: Tema) {
       paddingTop: 16,
       paddingBottom: 4,
       gap: 10,
+    },
+    rigaToggle: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    btnTema: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: t.carta,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 1,
     },
     toggle: {
       flexDirection: 'row',

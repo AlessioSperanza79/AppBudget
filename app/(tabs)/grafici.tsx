@@ -1,6 +1,6 @@
 // ── Schermata Grafici: vista mensile (torta + linea) e annuale (barre + categorie) ──
 import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Dimensions, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -8,10 +8,7 @@ import { formatEuro } from '../../utils/formatters';
 import EmptyState from '../../components/EmptyState';
 import { useTema, Tema } from '../../constants/tema';
 
-const LARGHEZZA = Dimensions.get('window').width;
-const LARGHEZZA_CHART = LARGHEZZA - 64;
-
-const MESI       = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const MESI       =['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 const MESI_BREVI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
 type Vista = 'mensile' | 'annuale';
@@ -21,6 +18,9 @@ export default function GraficiScreen() {
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
+
+  const { width: LARGHEZZA } = useWindowDimensions();
+  const LARGHEZZA_CHART = LARGHEZZA - 64;
 
   const [vista, setVista] = useState<Vista>('mensile');
   const [annoSel, setAnnoSel] = useState(new Date().getFullYear());
