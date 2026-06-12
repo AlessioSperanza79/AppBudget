@@ -1,6 +1,6 @@
 // ── Schermata principale: lista transazioni filtrata per periodo ──
 import { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Modal, StyleSheet, TextInput, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import TransactionItem from '../../components/TransactionItem';
@@ -8,6 +8,8 @@ import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
 import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
+import BottomSheet from '../../components/BottomSheet';
+import ConfermaDialog from '../../components/ConfermaDialog';
 import { useTema, Tema } from '../../constants/tema';
 import { Transazione, TipoTransazione, TipologiaConto } from '../../types';
 import { oggiIso } from '../../utils/formatters';
@@ -284,41 +286,23 @@ export default function TransazioniScreen() {
       />
 
       {/* ── Conferma eliminazione ── */}
-      <Modal visible={!!transazioneDaEliminare} transparent animationType="fade">
-        <View style={stili.sfondoModal}>
-          <View style={stili.cartaModal}>
-            <View style={stili.cerchioElimina}>
-              <Ionicons name="trash-outline" size={26} color={t.uscita} />
-            </View>
-            <Text style={stili.titoloModal}>Elimina transazione</Text>
-            <Text style={stili.testoModal}>Sei sicuro? L'operazione non può essere annullata.</Text>
-            <View style={stili.rigaBtnModal}>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnAnnulla]}
-                onPress={() => setTransazioneDaEliminare(undefined)}
-              >
-                <Text style={stili.testoAnnulla}>Annulla</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnElimina]}
-                onPress={() => {
-                  if (transazioneDaEliminare) eliminaTransazione(transazioneDaEliminare);
-                  setTransazioneDaEliminare(undefined);
-                }}
-              >
-                <Text style={stili.testoElimina}>Elimina</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfermaDialog
+        visibile={!!transazioneDaEliminare}
+        onChiudi={() => setTransazioneDaEliminare(undefined)}
+        titolo="Elimina transazione"
+        messaggio="Sei sicuro? L'operazione non può essere annullata."
+        onConferma={() => {
+          if (transazioneDaEliminare) eliminaTransazione(transazioneDaEliminare);
+          setTransazioneDaEliminare(undefined);
+        }}
+      />
 
       {/* ── Modal filtri avanzati ── */}
-      <Modal visible={modaleFiltri} transparent animationType="fade">
-        <View style={stili.sfondoModal}>
-          <View style={stili.cartaModal}>
-            <Text style={stili.titoloModal}>Filtri</Text>
+      <BottomSheet visibile={modaleFiltri} onChiudi={() => setModaleFiltri(false)}>
+        <View style={stili.contenutoFiltri}>
+          <Text style={stili.titoloModal}>Filtri</Text>
 
+          <ScrollView>
             <Text style={stili.etichettaFiltro}>Tipo</Text>
             <View style={stili.rigaChip}>
               {([
@@ -398,21 +382,21 @@ export default function TransazioniScreen() {
                 </View>
               </>
             )}
+          </ScrollView>
 
-            <View style={stili.rigaBtnModal}>
-              <TouchableOpacity style={[stili.btnModal, stili.btnAnnulla]} onPress={azzeraFiltri}>
-                <Text style={stili.testoAnnulla}>Azzera</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnApplica]}
-                onPress={() => setModaleFiltri(false)}
-              >
-                <Text style={stili.testoElimina}>Applica</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={stili.rigaBtnModal}>
+            <TouchableOpacity style={[stili.btnModal, stili.btnAnnulla]} onPress={azzeraFiltri}>
+              <Text style={stili.testoAnnulla}>Azzera</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[stili.btnModal, stili.btnApplica]}
+              onPress={() => setModaleFiltri(false)}
+            >
+              <Text style={stili.testoElimina}>Applica</Text>
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
+      </BottomSheet>
     </View>
   );
 }
@@ -610,46 +594,22 @@ function creaStili(t: Tema) {
       elevation: 8,
     },
 
-    // ── Modal conferma eliminazione ──
-    sfondoModal: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 24,
-    },
-    cartaModal: {
-      backgroundColor: t.carta,
-      borderRadius: 24,
-      padding: 28,
-      width: '100%',
-      alignItems: 'center',
-      gap: 10,
-    },
-    cerchioElimina: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: t.uscitaSfondo,
-      justifyContent: 'center',
-      alignItems: 'center',
+    // ── Modal filtri ──
+    contenutoFiltri: {
+      paddingHorizontal: 20,
+      paddingBottom: 28,
+      gap: 4,
     },
     titoloModal: {
       fontSize: 17,
       fontWeight: '700',
       color: t.titolo,
-      textAlign: 'center',
-    },
-    testoModal: {
-      fontSize: 14,
-      color: t.sottile,
-      textAlign: 'center',
-      lineHeight: 21,
+      marginBottom: 4,
     },
     rigaBtnModal: {
       flexDirection: 'row',
       gap: 10,
-      marginTop: 6,
+      marginTop: 16,
       width: '100%',
     },
     btnModal: {

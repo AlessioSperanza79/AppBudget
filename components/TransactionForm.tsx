@@ -1,13 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  ScrollView, Modal, Alert, KeyboardAvoidingView,
+  ScrollView, Alert, KeyboardAvoidingView,
   StyleSheet, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Transazione, Categoria, Istituto, TipoTransazione, TipologiaConto } from '../types';
 import { oggiIso } from '../utils/formatters';
 import SelectorData from './SelectorData';
+import BottomSheet from './BottomSheet';
 import { useTema, Tema } from '../constants/tema';
 
 interface Props {
@@ -93,7 +94,7 @@ export default function TransactionForm({
   const coloreAccento = tipo === 'entrata' ? t.entrata : t.uscita;
 
   return (
-    <Modal visible={visibile} animationType="slide" presentationStyle="pageSheet">
+    <BottomSheet visibile={visibile} onChiudi={onChiudi} altezza="94%">
       <KeyboardAvoidingView
         style={stili.sfondo}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -305,7 +306,7 @@ export default function TransactionForm({
         </TouchableOpacity>
 
       </KeyboardAvoidingView>
-    </Modal>
+    </BottomSheet>
   );
 }
 

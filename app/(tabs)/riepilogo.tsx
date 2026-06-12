@@ -3,7 +3,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useMemo, useState } from 'react';
 import {
-  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
+import BottomSheet from '../../components/BottomSheet';
 import CountUpText from '../../components/CountUpText';
 import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
@@ -477,37 +477,35 @@ export default function RiepilogoScreen() {
       </ScrollView>
 
       {/* ── Modal: imposta reddito mensile netto ── */}
-      <Modal visible={modaleReddito} animationType="fade" transparent>
-        <View style={stili.sfondoModal}>
-          <View style={stili.cardModal}>
-            <Text style={stili.titoloModal}>Reddito mensile netto</Text>
-            <Text style={stili.sottotitoloModal}>
-              Inserisci il tuo stipendio netto. Viene usato per calcolare l&apos;avanzo nel cruscotto flusso.
-            </Text>
-            <View style={stili.rigaInputReddito}>
-              <Text style={stili.euroSign}>€</Text>
-              <TextInput
-                style={stili.inputReddito}
-                value={redditoInput}
-                onChangeText={setRedditoInput}
-                placeholder="0"
-                keyboardType="decimal-pad"
-                returnKeyType="done"
-                placeholderTextColor={t.segnaposto}
-                autoFocus
-              />
-            </View>
-            <View style={stili.rigaBottoniModal}>
-              <TouchableOpacity style={stili.btnAnnullaModal} onPress={() => setModaleReddito(false)}>
-                <Text style={stili.testoAnnullaModal}>Annulla</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={stili.btnSalvaModal} onPress={salvaReddito}>
-                <Text style={stili.testoSalvaModal}>Salva</Text>
-              </TouchableOpacity>
-            </View>
+      <BottomSheet visibile={modaleReddito} onChiudi={() => setModaleReddito(false)}>
+        <View style={stili.corpoModal}>
+          <Text style={stili.titoloModal}>Reddito mensile netto</Text>
+          <Text style={stili.sottotitoloModal}>
+            Inserisci il tuo stipendio netto. Viene usato per calcolare l&apos;avanzo nel cruscotto flusso.
+          </Text>
+          <View style={stili.rigaInputReddito}>
+            <Text style={stili.euroSign}>€</Text>
+            <TextInput
+              style={stili.inputReddito}
+              value={redditoInput}
+              onChangeText={setRedditoInput}
+              placeholder="0"
+              keyboardType="decimal-pad"
+              returnKeyType="done"
+              placeholderTextColor={t.segnaposto}
+            />
           </View>
+          <View style={stili.rigaBottoniModal}>
+            <TouchableOpacity style={stili.btnAnnullaModal} onPress={() => setModaleReddito(false)}>
+              <Text style={stili.testoAnnullaModal}>Annulla</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={stili.btnSalvaModal} onPress={salvaReddito}>
+              <Text style={stili.testoSalvaModal}>Salva</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={{ height: 24 }} />
         </View>
-      </Modal>
+      </BottomSheet>
 
       {/* ── Pulsante flottante: nuova transazione ── */}
       <PressableScale
@@ -900,16 +898,9 @@ function creaStili(t: Tema) {
     },
 
     // ── Modal reddito ──
-    sfondoModal: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      padding: 24,
-    },
-    cardModal: {
-      backgroundColor: t.carta,
-      borderRadius: 24,
-      padding: 28,
+    corpoModal: {
+      paddingHorizontal: 24,
+      paddingTop: 4,
       gap: 10,
     },
     titoloModal: {

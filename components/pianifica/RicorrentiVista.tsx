@@ -1,7 +1,7 @@
 // ── Vista "Ricorrenti" della schermata Pianifica: modelli ricorrenti e applicazione mensile ──
 import { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet, Platform,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -12,6 +12,7 @@ import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
 import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
+import ConfermaDialog from '../../components/ConfermaDialog';
 import { useTema, Tema } from '../../constants/tema';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
@@ -200,67 +201,32 @@ export default function RicorrentiVista() {
       />
 
       {/* ── Conferma eliminazione modello ── */}
-      <Modal visible={!!modelloDaEliminare} transparent animationType="fade">
-        <View style={stili.sfondoModal}>
-          <View style={stili.cartaModal}>
-            <View style={stili.cerchioElimina}>
-              <Ionicons name="trash-outline" size={26} color={t.uscita} />
-            </View>
-            <Text style={stili.titoloModal}>Elimina modello</Text>
-            <Text style={stili.testoModal}>
-              {transazioni.some((x) => x.templateId === modelloDaEliminare)
-                ? 'Eliminare questo modello e tutte le transazioni create da esso?'
-                : 'Rimuovere questo modello ricorrente?'}
-            </Text>
-            <View style={stili.rigaBtnModal}>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnAnnulla]}
-                onPress={() => setModelloDaEliminare(undefined)}
-              >
-                <Text style={stili.testoAnnulla}>Annulla</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnElimina]}
-                onPress={() => {
-                  if (modelloDaEliminare) eliminaModelloRicorrente(modelloDaEliminare);
-                  setModelloDaEliminare(undefined);
-                }}
-              >
-                <Text style={stili.testoElimina}>Elimina</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfermaDialog
+        visibile={!!modelloDaEliminare}
+        onChiudi={() => setModelloDaEliminare(undefined)}
+        titolo="Elimina modello"
+        messaggio={
+          transazioni.some((x) => x.templateId === modelloDaEliminare)
+            ? 'Eliminare questo modello e tutte le transazioni create da esso?'
+            : 'Rimuovere questo modello ricorrente?'
+        }
+        onConferma={() => {
+          if (modelloDaEliminare) eliminaModelloRicorrente(modelloDaEliminare);
+          setModelloDaEliminare(undefined);
+        }}
+      />
 
       {/* ── Conferma applica ricorrenti ── */}
-      <Modal visible={mostraConfermaApplica} transparent animationType="fade">
-        <View style={stili.sfondoModal}>
-          <View style={stili.cartaModal}>
-            <View style={stili.cerchioApplica}>
-              <Ionicons name="checkmark-circle-outline" size={26} color={t.primario} />
-            </View>
-            <Text style={stili.titoloModal}>Applica ricorrenti</Text>
-            <Text style={stili.testoModal}>
-              {`Creare ${ricorrentiManuali.length} transazion${ricorrentiManuali.length === 1 ? 'e' : 'i'} per ${MESI[meseTarget]} ${annoTarget}?`}
-            </Text>
-            <View style={stili.rigaBtnModal}>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnAnnulla]}
-                onPress={() => setMostraConfermaApplica(false)}
-              >
-                <Text style={stili.testoAnnulla}>Annulla</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[stili.btnModal, stili.btnApplicaModal]}
-                onPress={eseguiApplica}
-              >
-                <Text style={stili.testoElimina}>Applica</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfermaDialog
+        visibile={mostraConfermaApplica}
+        onChiudi={() => setMostraConfermaApplica(false)}
+        titolo="Applica ricorrenti"
+        messaggio={`Creare ${ricorrentiManuali.length} transazion${ricorrentiManuali.length === 1 ? 'e' : 'i'} per ${MESI[meseTarget]} ${annoTarget}?`}
+        icona="checkmark-circle-outline"
+        pericoloso={false}
+        testoConferma="Applica"
+        onConferma={eseguiApplica}
+      />
     </View>
   );
 }
@@ -386,84 +352,6 @@ function creaStili(t: Tema) {
       color: '#FFF',
       fontSize: 15,
       fontWeight: '700',
-    },
-
-    // ── Modal conferme ──
-    sfondoModal: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 24,
-    },
-    cartaModal: {
-      backgroundColor: t.carta,
-      borderRadius: 24,
-      padding: 28,
-      width: '100%',
-      alignItems: 'center',
-      gap: 10,
-    },
-    cerchioElimina: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: t.uscitaSfondo,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    cerchioApplica: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: t.primarioSfondo,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    titoloModal: {
-      fontSize: 17,
-      fontWeight: '700',
-      color: t.titolo,
-      textAlign: 'center',
-    },
-    testoModal: {
-      fontSize: 14,
-      color: t.sottile,
-      textAlign: 'center',
-      lineHeight: 21,
-    },
-    rigaBtnModal: {
-      flexDirection: 'row',
-      gap: 10,
-      marginTop: 6,
-      width: '100%',
-    },
-    btnModal: {
-      flex: 1,
-      paddingVertical: 13,
-      borderRadius: 12,
-      alignItems: 'center',
-    },
-    btnAnnulla: {
-      backgroundColor: t.superfice,
-      borderWidth: 1,
-      borderColor: t.bordo,
-    },
-    btnElimina: {
-      backgroundColor: t.uscita,
-    },
-    btnApplicaModal: {
-      backgroundColor: t.primario,
-    },
-    testoAnnulla: {
-      fontSize: 15,
-      fontWeight: '600',
-      color: t.sottile,
-    },
-    testoElimina: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: '#FFF',
     },
 
     // ── FAB ──

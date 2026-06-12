@@ -2,12 +2,14 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  Modal, StyleSheet, Platform,
+  StyleSheet, Platform, KeyboardAvoidingView, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
 import PressableScale from '../../components/PressableScale';
+import BottomSheet from '../../components/BottomSheet';
+import ConfermaDialog from '../../components/ConfermaDialog';
 import ImpostazioniSezione from '../../components/altro/ImpostazioniSezione';
 import TourIntroduttivo from '../../components/onboarding/TourIntroduttivo';
 import { useTema, Tema } from '../../constants/tema';
@@ -244,9 +246,9 @@ export default function AltroScreen() {
       )}
 
       {/* ── Modal Categoria ── */}
-      <Modal visible={modaleCategoria} animationType="fade" transparent>
-        <View style={stili.sfondoModal}>
-          <View style={stili.cardModal}>
+      <BottomSheet visibile={modaleCategoria} onChiudi={() => setModaleCategoria(false)} altezza="92%">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView style={stili.corpoModal} keyboardShouldPersistTaps="handled">
             <Text style={stili.titoloModal}>
               {categoriaInModifica ? 'Modifica categoria' : 'Nuova categoria'}
             </Text>
@@ -258,7 +260,6 @@ export default function AltroScreen() {
               onChangeText={setNomeCategoria}
               placeholder="Es. Viaggi"
               placeholderTextColor={t.segnaposto}
-              autoFocus
               returnKeyType="done"
             />
 
@@ -306,14 +307,15 @@ export default function AltroScreen() {
                 <Text style={stili.testoConferma}>Salva</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </BottomSheet>
 
       {/* ── Modal Istituto ── */}
-      <Modal visible={modaleIstituto} animationType="fade" transparent>
-        <View style={stili.sfondoModal}>
-          <View style={stili.cardModal}>
+      <BottomSheet visibile={modaleIstituto} onChiudi={() => setModaleIstituto(false)}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={stili.corpoModal}>
             <Text style={stili.titoloModal}>
               {istitutoInModifica ? 'Rinomina istituto' : 'Nuovo istituto'}
             </Text>
@@ -324,7 +326,6 @@ export default function AltroScreen() {
               onChangeText={setNomeIstituto}
               placeholder="Es. Banca Sella"
               placeholderTextColor={t.segnaposto}
-              autoFocus
               returnKeyType="done"
             />
             <View style={stili.rigaBottoni}>
@@ -335,97 +336,70 @@ export default function AltroScreen() {
                 <Text style={stili.testoConferma}>Salva</Text>
               </TouchableOpacity>
             </View>
+            <View style={{ height: 24 }} />
           </View>
-        </View>
-      </Modal>
+        </KeyboardAvoidingView>
+      </BottomSheet>
 
       {/* ── Modal conferma elimina categoria ── */}
-      {catDaEliminare && (() => {
-        const inUso  = transazioni.some((tr) => tr.categoriaId === catDaEliminare.id);
-        const nTrans = transazioni.filter((tr) => tr.categoriaId === catDaEliminare.id).length;
+      {(() => {
+        const inUso  = !!catDaEliminare && transazioni.some((tr) => tr.categoriaId === catDaEliminare.id);
+        const nTrans = catDaEliminare ? transazioni.filter((tr) => tr.categoriaId === catDaEliminare.id).length : 0;
         return (
-          <Modal visible animationType="fade" transparent>
-            <View style={stili.sfondoModal}>
-              <View style={stili.cardModal}>
-                <View style={stili.rigaIconaElimina}>
-                  <View style={stili.cerchioElimina}>
-                    <Ionicons name="trash-outline" size={22} color={t.uscita} />
-                  </View>
-                  <Text style={stili.titoloModal}>Elimina categoria</Text>
-                </View>
-                {inUso ? (
-                  <Text style={stili.testoModal}>
-                    <Text style={{ fontWeight: '700' }}>{catDaEliminare.nome}</Text>
-                    {` è collegata a ${nTrans} transazion${nTrans === 1 ? 'e' : 'i'} e non può essere eliminata.\n\nRimuovi prima le transazioni collegate.`}
-                  </Text>
-                ) : (
-                  <Text style={stili.testoModal}>
-                    {'Vuoi eliminare '}
-                    <Text style={{ fontWeight: '700' }}>{catDaEliminare.nome}</Text>
-                    {'? Questa azione non può essere annullata.'}
-                  </Text>
-                )}
-                <View style={stili.rigaBottoni}>
-                  <TouchableOpacity style={stili.btnAnnulla} onPress={() => setCatDaEliminare(undefined)}>
-                    <Text style={stili.testoAnnulla}>{inUso ? 'Chiudi' : 'Annulla'}</Text>
-                  </TouchableOpacity>
-                  {!inUso && (
-                    <TouchableOpacity
-                      style={[stili.btnConferma, { backgroundColor: t.uscita }]}
-                      onPress={() => { eliminaCategoria(catDaEliminare.id); setCatDaEliminare(undefined); }}
-                    >
-                      <Text style={stili.testoConferma}>Elimina</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
-          </Modal>
+          <ConfermaDialog
+            visibile={!!catDaEliminare}
+            onChiudi={() => setCatDaEliminare(undefined)}
+            titolo="Elimina categoria"
+            messaggio={
+              inUso ? (
+                <>
+                  <Text style={{ fontWeight: '700' }}>{catDaEliminare?.nome}</Text>
+                  {` è collegata a ${nTrans} transazion${nTrans === 1 ? 'e' : 'i'} e non può essere eliminata.\n\nRimuovi prima le transazioni collegate.`}
+                </>
+              ) : (
+                <>
+                  {'Vuoi eliminare '}
+                  <Text style={{ fontWeight: '700' }}>{catDaEliminare?.nome}</Text>
+                  {'? Questa azione non può essere annullata.'}
+                </>
+              )
+            }
+            onConferma={inUso ? undefined : () => {
+              if (catDaEliminare) eliminaCategoria(catDaEliminare.id);
+              setCatDaEliminare(undefined);
+            }}
+          />
         );
       })()}
 
       {/* ── Modal conferma elimina istituto ── */}
-      {istDaEliminare && (() => {
-        const inUso  = transazioni.some((tr) => tr.istitutoId === istDaEliminare.id);
-        const nTrans = transazioni.filter((tr) => tr.istitutoId === istDaEliminare.id).length;
+      {(() => {
+        const inUso  = !!istDaEliminare && transazioni.some((tr) => tr.istitutoId === istDaEliminare.id);
+        const nTrans = istDaEliminare ? transazioni.filter((tr) => tr.istitutoId === istDaEliminare.id).length : 0;
         return (
-          <Modal visible animationType="fade" transparent>
-            <View style={stili.sfondoModal}>
-              <View style={stili.cardModal}>
-                <View style={stili.rigaIconaElimina}>
-                  <View style={stili.cerchioElimina}>
-                    <Ionicons name="trash-outline" size={22} color={t.uscita} />
-                  </View>
-                  <Text style={stili.titoloModal}>Elimina conto</Text>
-                </View>
-                {inUso ? (
-                  <Text style={stili.testoModal}>
-                    <Text style={{ fontWeight: '700' }}>{istDaEliminare.nome}</Text>
-                    {` è collegato a ${nTrans} transazion${nTrans === 1 ? 'e' : 'i'} e non può essere eliminato.\n\nRimuovi prima le transazioni collegate.`}
-                  </Text>
-                ) : (
-                  <Text style={stili.testoModal}>
-                    {'Vuoi eliminare '}
-                    <Text style={{ fontWeight: '700' }}>{istDaEliminare.nome}</Text>
-                    {'? Questa azione non può essere annullata.'}
-                  </Text>
-                )}
-                <View style={stili.rigaBottoni}>
-                  <TouchableOpacity style={stili.btnAnnulla} onPress={() => setIstDaEliminare(undefined)}>
-                    <Text style={stili.testoAnnulla}>{inUso ? 'Chiudi' : 'Annulla'}</Text>
-                  </TouchableOpacity>
-                  {!inUso && (
-                    <TouchableOpacity
-                      style={[stili.btnConferma, { backgroundColor: t.uscita }]}
-                      onPress={() => { eliminaIstituto(istDaEliminare.id); setIstDaEliminare(undefined); }}
-                    >
-                      <Text style={stili.testoConferma}>Elimina</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-            </View>
-          </Modal>
+          <ConfermaDialog
+            visibile={!!istDaEliminare}
+            onChiudi={() => setIstDaEliminare(undefined)}
+            titolo="Elimina conto"
+            messaggio={
+              inUso ? (
+                <>
+                  <Text style={{ fontWeight: '700' }}>{istDaEliminare?.nome}</Text>
+                  {` è collegato a ${nTrans} transazion${nTrans === 1 ? 'e' : 'i'} e non può essere eliminato.\n\nRimuovi prima le transazioni collegate.`}
+                </>
+              ) : (
+                <>
+                  {'Vuoi eliminare '}
+                  <Text style={{ fontWeight: '700' }}>{istDaEliminare?.nome}</Text>
+                  {'? Questa azione non può essere annullata.'}
+                </>
+              )
+            }
+            onConferma={inUso ? undefined : () => {
+              if (istDaEliminare) eliminaIstituto(istDaEliminare.id);
+              setIstDaEliminare(undefined);
+            }}
+          />
         );
       })()}
 
@@ -616,16 +590,9 @@ function creaStili(t: Tema) {
     },
 
     // ── Modal ──
-    sfondoModal: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      padding: 24,
-    },
-    cardModal: {
-      backgroundColor: t.carta,
-      borderRadius: 24,
-      padding: 24,
+    corpoModal: {
+      paddingHorizontal: 24,
+      paddingTop: 4,
     },
     titoloModal: {
       fontSize: 18,
@@ -687,29 +654,6 @@ function creaStili(t: Tema) {
     campioneAttivo: {
       borderWidth: 3,
       borderColor: t.titolo,
-    },
-
-    // ── Conferma elimina ──
-    rigaIconaElimina: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      marginBottom: 10,
-    },
-    cerchioElimina: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.uscitaSfondo,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    testoModal: {
-      fontSize: 14,
-      color: t.sottile,
-      lineHeight: 21,
-      marginTop: 4,
-      marginBottom: 4,
     },
 
     // ── Bottoni modal ──

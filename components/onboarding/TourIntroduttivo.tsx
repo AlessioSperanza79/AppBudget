@@ -1,6 +1,6 @@
 // ── Tour introduttivo: spiega le schede principali dell'app al primo avvio (o su richiesta da "Aiuto") ──
-import { useState } from 'react';
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import FadeInView from '../FadeInView';
@@ -47,6 +47,11 @@ const DIAPOSITIVE: Diapositiva[] = [
   },
 ];
 
+// Tempo di permanenza su ogni diapositiva prima dell'avanzamento automatico
+const DURATA_AUTO = 5000;
+// Scorrimento orizzontale minimo (px) per cambiare diapositiva con lo swipe
+const SOGLIA_SWIPE = 50;
+
 interface ProprietaTour {
   visibile: boolean;
   onChiudi: () => void;
@@ -58,7 +63,7 @@ export default function TourIntroduttivo({ visibile, onChiudi }: ProprietaTour) 
   const setTourCompletato = usePreferenze((s) => s.setTourCompletato);
 
   const [indice, setIndice] = useState(0);
-  const [nonMostrarePiu, setNonMostrarePiu] = useState(true);
+  const [nonMostrarePiu, setNonMostrarePiu] = useState(false);
 
   const ultima = indice === DIAPOSITIVE.length - 1;
   const diapositiva = DIAPOSITIVE[indice];
@@ -69,7 +74,12 @@ export default function TourIntroduttivo({ visibile, onChiudi }: ProprietaTour) 
     onChiudi();
   };
 
-  const avanti = () => {
+  const vaiA = (nuovoIndice: number) => {
+    if (nuovoIndice < 0 || nuovoIndice >= DIAPOSITIVE.length) return;
+    setIndice(nuovoIndice);
+  };
+
+  const gestisciAvanti = () => {
     if (ultima) {
       chiudi();
       return;
@@ -77,58 +87,89 @@ export default function TourIntroduttivo({ visibile, onChiudi }: ProprietaTour) 
     setIndice((i) => i + 1);
   };
 
+  // Avanza automaticamente alla diapositiva successiva dopo qualche secondo,
+  // tornando alla prima dopo l'ultima (effetto carosello continuo)
+  useEffect(() => {
+    if (!visibile) return;
+    const timer = setTimeout(() => {
+      setIndice((i) => (i + 1) % DIAPOSITIVE.length);
+    }, DURATA_AUTO);
+    return () => clearTimeout(timer);
+  }, [visibile, indice]);
+
+  // Permette di cambiare diapositiva scorrendo orizzontalmente con dito o mouse
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponderCapture: (_, gesto) =>
+        Math.abs(gesto.dx) > 10 && Math.abs(gesto.dx) > Math.abs(gesto.dy),
+      onPanResponderRelease: (_, gesto) => {
+        if (gesto.dx <= -SOGLIA_SWIPE) vaiA(indice + 1);
+        else if (gesto.dx >= SOGLIA_SWIPE) vaiA(indice - 1);
+      },
+    })
+  ).current;
+
+  if (!visibile) return null;
+
   return (
-    <Modal visible={visibile} animationType="fade" onRequestClose={chiudi}>
-      <View style={stili.contenitore}>
-        <View style={stili.intestazione}>
-          <TouchableOpacity onPress={chiudi} hitSlop={10}>
-            <Text style={stili.testoSalta}>Salta</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={stili.corpo}>
-          <FadeInView key={indice} style={stili.corpoInterno}>
-            <View style={stili.cerchioIcona}>
-              <Ionicons name={diapositiva.icona} size={48} color={t.primario} />
-            </View>
-            <Text style={stili.titolo}>{diapositiva.titolo}</Text>
-            <Text style={stili.descrizione}>{diapositiva.descrizione}</Text>
-          </FadeInView>
-        </View>
-
-        <View style={stili.piedino}>
-          <View style={stili.puntini}>
-            {DIAPOSITIVE.map((_, i) => (
-              <View key={i} style={[stili.puntino, i === indice && stili.puntinoAttivo]} />
-            ))}
-          </View>
-
-          <TouchableOpacity style={stili.rigaCheckbox} onPress={() => setNonMostrarePiu((v) => !v)} hitSlop={8}>
-            <View style={[stili.checkbox, nonMostrarePiu && stili.checkboxAttivo]}>
-              {nonMostrarePiu && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-            </View>
-            <Text style={stili.testoCheckbox}>Non mostrare più</Text>
-          </TouchableOpacity>
-
-          <PressableScale onPress={avanti}>
-            <LinearGradient
-              colors={[t.primario, t.viola]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={stili.btnAvanti}
-            >
-              <Text style={stili.testoBtnAvanti}>{ultima ? 'Inizia' : 'Avanti'}</Text>
-            </LinearGradient>
-          </PressableScale>
-        </View>
+    <View style={stili.contenitore} {...panResponder.panHandlers}>
+      <View style={stili.intestazione}>
+        <TouchableOpacity onPress={chiudi} hitSlop={10}>
+          <Text style={stili.testoSalta}>Salta</Text>
+        </TouchableOpacity>
       </View>
-    </Modal>
+
+      <View style={stili.corpo}>
+        <FadeInView key={indice} style={stili.corpoInterno}>
+          <View style={stili.cerchioIcona}>
+            <Ionicons name={diapositiva.icona} size={48} color={t.primario} />
+          </View>
+          <Text style={stili.titolo}>{diapositiva.titolo}</Text>
+          <Text style={stili.descrizione}>{diapositiva.descrizione}</Text>
+        </FadeInView>
+      </View>
+
+      <View style={stili.piedino}>
+        <View style={stili.puntini}>
+          {DIAPOSITIVE.map((_, i) => (
+            <TouchableOpacity key={i} onPress={() => vaiA(i)} hitSlop={6}>
+              <View style={[stili.puntino, i === indice && stili.puntinoAttivo]} />
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <TouchableOpacity style={stili.rigaCheckbox} onPress={() => setNonMostrarePiu((v) => !v)} hitSlop={8}>
+          <View style={[stili.checkbox, nonMostrarePiu && stili.checkboxAttivo]}>
+            {nonMostrarePiu && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
+          </View>
+          <Text style={stili.testoCheckbox}>Non mostrare più</Text>
+        </TouchableOpacity>
+
+        <PressableScale onPress={gestisciAvanti}>
+          <LinearGradient
+            colors={[t.primario, t.viola]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={stili.btnAvanti}
+          >
+            <Text style={stili.testoBtnAvanti}>{ultima ? 'Inizia' : 'Avanti'}</Text>
+          </LinearGradient>
+        </PressableScale>
+      </View>
+    </View>
   );
 }
 
 function creaStili(t: Tema) {
   return StyleSheet.create({
     contenitore: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 1000,
+      elevation: 1000,
       flex: 1,
       backgroundColor: t.sfondo,
     },

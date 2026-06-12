@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  Modal, StyleSheet, Platform,
+  ScrollView, KeyboardAvoidingView, StyleSheet, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -12,6 +12,8 @@ import { formatEuro, formatData } from '../../utils/formatters';
 import EmptyState from '../../components/EmptyState';
 import PressableScale from '../../components/PressableScale';
 import SelectorData from '../../components/SelectorData';
+import BottomSheet from '../../components/BottomSheet';
+import ConfermaDialog from '../../components/ConfermaDialog';
 
 const PALETTE: string[] = [
   '#2563EB', '#15803D', '#F57F17', '#7C3AED',
@@ -170,9 +172,9 @@ export default function ObiettiviVista() {
       />
 
       {/* ── Modal Obiettivo ── */}
-      <Modal visible={modaleObiettivo} animationType="fade" transparent>
-        <View style={stili.sfondoModal}>
-          <View style={stili.cardModal}>
+      <BottomSheet visibile={modaleObiettivo} onChiudi={() => setModaleObiettivo(false)} altezza="92%">
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView style={stili.corpoModal} keyboardShouldPersistTaps="handled">
             <Text style={stili.titoloModal}>
               {obiettivoInModifica ? 'Modifica obiettivo' : 'Nuovo obiettivo'}
             </Text>
@@ -184,7 +186,6 @@ export default function ObiettiviVista() {
               onChangeText={setNome}
               placeholder="Es. Vacanza estiva"
               placeholderTextColor={t.segnaposto}
-              autoFocus
               returnKeyType="done"
             />
 
@@ -249,85 +250,69 @@ export default function ObiettiviVista() {
                 <Text style={stili.testoConferma}>Salva</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
+            <View style={{ height: 24 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </BottomSheet>
 
       {/* ── Modal Gestisci fondi ── */}
-      {obiettivoFondi && (
-        <Modal visible={modaleFondi} animationType="fade" transparent>
-          <View style={stili.sfondoModal}>
-            <View style={stili.cardModal}>
-              <Text style={stili.titoloModal}>{obiettivoFondi.nome}</Text>
-              <Text style={stili.testoModal}>
-                Accantonato: <Text style={{ fontWeight: '700' }}>{formatEuro(obiettivoFondi.importoAttuale)}</Text>
-                {' '}di {formatEuro(obiettivoFondi.importoObiettivo)}
-              </Text>
+      <BottomSheet visibile={modaleFondi && !!obiettivoFondi} onChiudi={() => setModaleFondi(false)}>
+        {obiettivoFondi && (
+          <View style={stili.corpoModal}>
+            <Text style={stili.titoloModal}>{obiettivoFondi.nome}</Text>
+            <Text style={stili.testoModal}>
+              Accantonato: <Text style={{ fontWeight: '700' }}>{formatEuro(obiettivoFondi.importoAttuale)}</Text>
+              {' '}di {formatEuro(obiettivoFondi.importoObiettivo)}
+            </Text>
 
-              <Text style={stili.etichetta}>Importo (€)</Text>
-              <TextInput
-                style={stili.input}
-                value={importoFondi}
-                onChangeText={setImportoFondi}
-                placeholder="Es. 50"
-                placeholderTextColor={t.segnaposto}
-                keyboardType="decimal-pad"
-                autoFocus
-              />
+            <Text style={stili.etichetta}>Importo (€)</Text>
+            <TextInput
+              style={stili.input}
+              value={importoFondi}
+              onChangeText={setImportoFondi}
+              placeholder="Es. 50"
+              placeholderTextColor={t.segnaposto}
+              keyboardType="decimal-pad"
+            />
 
-              <View style={stili.rigaBottoni}>
-                <TouchableOpacity
-                  style={[stili.btnAnnulla, { borderColor: t.uscita }]}
-                  onPress={() => applicaFondi(-1)}
-                >
-                  <Text style={[stili.testoAnnulla, { color: t.uscita }]}>− Preleva</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[stili.btnConferma, { backgroundColor: t.entrata }]}
-                  onPress={() => applicaFondi(1)}
-                >
-                  <Text style={stili.testoConferma}>+ Versa</Text>
-                </TouchableOpacity>
-              </View>
-              <TouchableOpacity style={{ marginTop: 12, alignItems: 'center' }} onPress={() => setModaleFondi(false)}>
-                <Text style={stili.testoAnnulla}>Chiudi</Text>
+            <View style={stili.rigaBottoni}>
+              <TouchableOpacity
+                style={[stili.btnAnnulla, { borderColor: t.uscita }]}
+                onPress={() => applicaFondi(-1)}
+              >
+                <Text style={[stili.testoAnnulla, { color: t.uscita }]}>− Preleva</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[stili.btnConferma, { backgroundColor: t.entrata }]}
+                onPress={() => applicaFondi(1)}
+              >
+                <Text style={stili.testoConferma}>+ Versa</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity style={{ marginTop: 12, marginBottom: 20, alignItems: 'center' }} onPress={() => setModaleFondi(false)}>
+              <Text style={stili.testoAnnulla}>Chiudi</Text>
+            </TouchableOpacity>
           </View>
-        </Modal>
-      )}
+        )}
+      </BottomSheet>
 
       {/* ── Modal conferma elimina ── */}
-      {obDaEliminare && (
-        <Modal visible animationType="fade" transparent>
-          <View style={stili.sfondoModal}>
-            <View style={stili.cardModal}>
-              <View style={stili.rigaIconaElimina}>
-                <View style={stili.cerchioElimina}>
-                  <Ionicons name="trash-outline" size={22} color={t.uscita} />
-                </View>
-                <Text style={stili.titoloModal}>Elimina obiettivo</Text>
-              </View>
-              <Text style={stili.testoModal}>
-                {'Vuoi eliminare '}
-                <Text style={{ fontWeight: '700' }}>{obDaEliminare.nome}</Text>
-                {'? Questa azione non può essere annullata.'}
-              </Text>
-              <View style={stili.rigaBottoni}>
-                <TouchableOpacity style={stili.btnAnnulla} onPress={() => setObDaEliminare(undefined)}>
-                  <Text style={stili.testoAnnulla}>Annulla</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[stili.btnConferma, { backgroundColor: t.uscita }]}
-                  onPress={() => { eliminaObiettivo(obDaEliminare.id); setObDaEliminare(undefined); }}
-                >
-                  <Text style={stili.testoConferma}>Elimina</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      )}
+      <ConfermaDialog
+        visibile={!!obDaEliminare}
+        onChiudi={() => setObDaEliminare(undefined)}
+        titolo="Elimina obiettivo"
+        messaggio={
+          <>
+            {'Vuoi eliminare '}
+            <Text style={{ fontWeight: '700' }}>{obDaEliminare?.nome}</Text>
+            {'? Questa azione non può essere annullata.'}
+          </>
+        }
+        onConferma={() => {
+          if (obDaEliminare) eliminaObiettivo(obDaEliminare.id);
+          setObDaEliminare(undefined);
+        }}
+      />
     </View>
   );
 }
@@ -447,16 +432,9 @@ function creaStili(t: Tema) {
     },
 
     // ── Modal ──
-    sfondoModal: {
-      flex: 1,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      justifyContent: 'center',
-      padding: 24,
-    },
-    cardModal: {
-      backgroundColor: t.carta,
-      borderRadius: 24,
-      padding: 24,
+    corpoModal: {
+      paddingHorizontal: 24,
+      paddingTop: 4,
     },
     titoloModal: {
       fontSize: 18,
@@ -526,22 +504,6 @@ function creaStili(t: Tema) {
       fontSize: 14,
       fontWeight: '600',
       color: t.piuSottile,
-    },
-
-    // ── Conferma elimina ──
-    rigaIconaElimina: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 12,
-      marginBottom: 10,
-    },
-    cerchioElimina: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      backgroundColor: t.uscitaSfondo,
-      alignItems: 'center',
-      justifyContent: 'center',
     },
 
     // ── Bottoni modal ──
