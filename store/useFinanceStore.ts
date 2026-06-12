@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { Transazione, Categoria, Istituto, TipoCategoria } from '../types';
+import { Transazione, Categoria, Istituto, TipoCategoria, Obiettivo } from '../types';
 import { CATEGORIE_DEFAULT } from '../constants/categorieDefault';
 import { ISTITUTI_DEFAULT } from '../constants/istitutiDefault';
 
@@ -14,6 +14,7 @@ interface FinanceState {
   transazioni: Transazione[];
   categorie: Categoria[];
   istituti: Istituto[];
+  obiettivi: Obiettivo[];
   caricamento: boolean;
   reddito: number; // reddito mensile netto impostato dall'utente
 
@@ -40,6 +41,10 @@ interface FinanceState {
   aggiungiIstituto: (nome: string) => Promise<void>;
   rinominaIstituto: (id: string, nuovoNome: string) => Promise<void>;
   eliminaIstituto: (id: string) => Promise<void>;
+
+  aggiungiObiettivo: (dati: Omit<Obiettivo, 'id'>) => Promise<void>;
+  modificaObiettivo: (id: string, aggiornamenti: Partial<Omit<Obiettivo, 'id'>>) => Promise<void>;
+  eliminaObiettivo: (id: string) => Promise<void>;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -49,22 +54,25 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
   transazioni: [],
   categorie: [],
   istituti: [],
+  obiettivi: [],
   caricamento: true,
   reddito: 0,
 
   caricaDati: async () => {
     set({ caricamento: true });
 
-    const [catRis, transRis, istRis, impostRis] = await Promise.all([
+    const [catRis, transRis, istRis, impostRis, obiRis] = await Promise.all([
       supabase.from('categorie').select('*'),
       supabase.from('transazioni').select('*').order('data', { ascending: false }),
       supabase.from('istituti').select('*'),
       supabase.from('impostazioni').select('reddito_mensile').eq('id', 'default').maybeSingle(),
+      supabase.from('obiettivi').select('*').order('created_at', { ascending: true }),
     ]);
 
     if (catRis.error)   console.error('[Supabase] carica categorie:', catRis.error.message);
     if (transRis.error) console.error('[Supabase] carica transazioni:', transRis.error.message);
     if (istRis.error)   console.error('[Supabase] carica istituti:', istRis.error.message);
+    if (obiRis.error)   console.error('[Supabase] carica obiettivi:', obiRis.error.message);
 
     // Prima apertura: inserisce le categorie e gli istituti predefiniti
     if (catRis.data?.length === 0) {
@@ -103,6 +111,12 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(template_id != null && { templateId: template_id }),
         ...(tag         != null && { tag }),
       })),
+      obiettivi: (obiRis.data ?? []).map(({ id, nome, importo_obiettivo, importo_attuale, colore, data_scadenza }): Obiettivo => ({
+        id, nome, colore,
+        importoObiettivo: Number(importo_obiettivo),
+        importoAttuale: Number(importo_attuale),
+        ...(data_scadenza != null && { dataScadenza: data_scadenza }),
+      })),
       reddito: Number(impostRis.data?.reddito_mensile ?? 0),
       caricamento: false,
     });
@@ -116,6 +130,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categorie' },    () => get().caricaDati())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'istituti' },     () => get().caricaDati())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'impostazioni' }, () => get().caricaDati())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'obiettivi' },     () => get().caricaDati())
       .subscribe((status, err) => {
         if (err) {
           // Il socket si chiude per timeout/rete: il client riconnette automaticamente
@@ -338,5 +353,38 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
   eliminaIstituto: async (id) => {
     set((s) => ({ istituti: s.istituti.filter((i) => i.id !== id) }));
     await supabase.from('istituti').delete().eq('id', id);
+  },
+
+  // ── Obiettivi di risparmio ──
+
+  aggiungiObiettivo: async (dati) => {
+    const nuovo: Obiettivo = { ...dati, id: generaId() };
+    set((s) => ({ obiettivi: [...s.obiettivi, nuovo] }));
+    await supabase.from('obiettivi').insert({
+      id: nuovo.id,
+      nome: nuovo.nome,
+      importo_obiettivo: nuovo.importoObiettivo,
+      importo_attuale: nuovo.importoAttuale,
+      colore: nuovo.colore,
+      data_scadenza: nuovo.dataScadenza ?? null,
+    });
+  },
+
+  modificaObiettivo: async (id, aggiornamenti) => {
+    set((s) => ({
+      obiettivi: s.obiettivi.map((o) => o.id === id ? { ...o, ...aggiornamenti } : o),
+    }));
+    const dbUpdate: Record<string, unknown> = {};
+    if (aggiornamenti.nome             !== undefined) dbUpdate.nome              = aggiornamenti.nome;
+    if (aggiornamenti.importoObiettivo !== undefined) dbUpdate.importo_obiettivo = aggiornamenti.importoObiettivo;
+    if (aggiornamenti.importoAttuale   !== undefined) dbUpdate.importo_attuale   = aggiornamenti.importoAttuale;
+    if (aggiornamenti.colore           !== undefined) dbUpdate.colore            = aggiornamenti.colore;
+    if (aggiornamenti.dataScadenza     !== undefined) dbUpdate.data_scadenza     = aggiornamenti.dataScadenza ?? null;
+    await supabase.from('obiettivi').update(dbUpdate).eq('id', id);
+  },
+
+  eliminaObiettivo: async (id) => {
+    set((s) => ({ obiettivi: s.obiettivi.filter((o) => o.id !== id) }));
+    await supabase.from('obiettivi').delete().eq('id', id);
   },
 }));

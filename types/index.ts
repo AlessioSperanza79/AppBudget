@@ -26,6 +26,16 @@ export interface Istituto {
   nome: string;
 }
 
+/** Un obiettivo di risparmio (es. "Vacanza", "Fondo emergenza") */
+export interface Obiettivo {
+  id: string;
+  nome: string;
+  importoObiettivo: number; // somma da raggiungere
+  importoAttuale: number;   // somma accumulata finora
+  colore: string;           // colore esadecimale per la barra di progresso
+  dataScadenza?: string;    // scadenza facoltativa "YYYY-MM-DD"
+}
+
 /** Una singola transazione finanziaria */
 export interface Transazione {
   id: string;

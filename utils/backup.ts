@@ -1,5 +1,5 @@
 // Generazione del contenuto JSON per il backup completo dei dati
-import { Categoria, Istituto, Transazione } from '../types';
+import { Categoria, Istituto, Obiettivo, Transazione } from '../types';
 
 export interface BackupDati {
   versione: number;
@@ -8,6 +8,7 @@ export interface BackupDati {
   categorie: Categoria[];
   istituti: Istituto[];
   transazioni: Transazione[];
+  obiettivi: Obiettivo[];
 }
 
 export const generaBackupJson = (
@@ -15,14 +16,16 @@ export const generaBackupJson = (
   categorie: Categoria[],
   istituti: Istituto[],
   reddito: number,
+  obiettivi: Obiettivo[],
 ): string => {
   const backup: BackupDati = {
-    versione: 1,
+    versione: 2,
     dataEsportazione: new Date().toISOString(),
     reddito,
     categorie,
     istituti,
     transazioni,
+    obiettivi,
   };
   return JSON.stringify(backup, null, 2);
 };

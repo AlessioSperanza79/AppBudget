@@ -58,7 +58,7 @@ function RigaFlusso({
 }
 
 export default function RiepilogoScreen() {
-  const { transazioni, categorie, istituti, reddito, aggiornaReddito } = useFinanceStore();
+  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi } = useFinanceStore();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -73,7 +73,7 @@ export default function RiepilogoScreen() {
   };
 
   const gestisciBackup = () => {
-    const json = generaBackupJson(transazioni, categorie, istituti, reddito);
+    const json = generaBackupJson(transazioni, categorie, istituti, reddito, obiettivi);
     esportaFile(`backup_appbudget_${oggiIso()}.json`, json, 'application/json');
   };
 
