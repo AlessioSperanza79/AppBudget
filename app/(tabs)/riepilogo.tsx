@@ -1,17 +1,25 @@
 // ── Schermata Riepilogo: saldo, cruscotto flusso e ultime transazioni del periodo ──
-import { useState, useMemo } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Platform, Modal, TextInput, useWindowDimensions,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { LineChart } from 'react-native-gifted-charts';
 import { Ionicons } from '@expo/vector-icons';
-import { useFinanceStore } from '../../store/useFinanceStore';
-import { formatEuro } from '../../utils/formatters';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useMemo, useState } from 'react';
+import {
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { LineChart } from 'react-native-gifted-charts';
 import TransactionItem from '../../components/TransactionItem';
-import { useTema, Tema } from '../../constants/tema';
-import { usePreferenze, PreferenzaTema } from '../../store/usePreferenze';
+import { Tema, useTema } from '../../constants/tema';
+import { useFinanceStore } from '../../store/useFinanceStore';
+import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
+import { Categoria } from '../../types';
+import { formatEuro } from '../../utils/formatters';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -149,6 +157,59 @@ export default function RiepilogoScreen() {
     () => [...transazioniFiltrate].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
     [transazioniFiltrate],
   );
+
+  // ── Statistiche avanzate ──
+
+  // Giorni trascorsi nel periodo selezionato (usati come denominatore della media giornaliera)
+  const giorniPeriodo = useMemo(() => {
+    const oggi = new Date();
+    if (periodo === 'mensile') {
+      const giorniMese = new Date(dataCorrente.getFullYear(), dataCorrente.getMonth() + 1, 0).getDate();
+      const isMeseCorrente = dataCorrente.getFullYear() === oggi.getFullYear() && dataCorrente.getMonth() === oggi.getMonth();
+      return isMeseCorrente ? oggi.getDate() : giorniMese;
+    }
+    const isAnnoCorrente = dataCorrente.getFullYear() === oggi.getFullYear();
+    if (!isAnnoCorrente) {
+      const bisestile = new Date(dataCorrente.getFullYear(), 1, 29).getMonth() === 1;
+      return bisestile ? 366 : 365;
+    }
+    const inizioAnno = new Date(oggi.getFullYear(), 0, 1);
+    return Math.floor((oggi.getTime() - inizioAnno.getTime()) / 86400000) + 1;
+  }, [periodo, dataCorrente]);
+
+  const mediaGiornaliera = giorniPeriodo > 0 ? totaleUscite / giorniPeriodo : 0;
+
+  // Top 3 categorie di spesa del periodo
+  const topCategorieSpesa = useMemo(() => {
+    const mappa = new Map<string, number>();
+    for (const tr of transazioniFiltrate) {
+      if (tr.tipo !== 'uscita') continue;
+      mappa.set(tr.categoriaId, (mappa.get(tr.categoriaId) ?? 0) + tr.importo);
+    }
+    return Array.from(mappa.entries())
+      .map(([categoriaId, valore]) => ({ categoria: categorie.find((c) => c.id === categoriaId), valore }))
+      .filter((d): d is { categoria: Categoria; valore: number } => d.categoria != null)
+      .sort((a, b) => b.valore - a.valore)
+      .slice(0, 3);
+  }, [transazioniFiltrate, categorie]);
+
+  // Confronto con la spesa media dei 3 mesi precedenti (solo vista mensile)
+  const mediaUsciteTreMesiPrec = useMemo(() => {
+    if (periodo !== 'mensile') return null;
+    let somma = 0;
+    for (let i = 1; i <= 3; i++) {
+      const d = new Date(dataCorrente.getFullYear(), dataCorrente.getMonth() - i, 1);
+      const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      somma += transazioni
+        .filter((tr) => !tr.ricorrente && tr.tipo === 'uscita' && tr.data.startsWith(chiave))
+        .reduce((s, tr) => s + tr.importo, 0);
+    }
+    return somma / 3;
+  }, [periodo, dataCorrente, transazioni]);
+
+  const differenzaMediaPerc = mediaUsciteTreMesiPrec != null && mediaUsciteTreMesiPrec > 0
+    ? ((totaleUscite - mediaUsciteTreMesiPrec) / mediaUsciteTreMesiPrec) * 100
+    : null;
 
   const coloriGradiente: [string, string] = saldo >= 0
     ? ['#059669', '#047857']
@@ -319,6 +380,48 @@ export default function RiepilogoScreen() {
           </View>
         )}
 
+        {/* ── Statistiche avanzate ── */}
+        {totaleUscite > 0 && (
+          <View style={stili.sezioneStatistiche}>
+            <Text style={stili.titoloSparkline}>Statistiche</Text>
+
+            <View style={stili.rigaStatistica}>
+              <Text style={stili.etichettaStatistica}>Media spesa giornaliera</Text>
+              <Text style={stili.valoreStatistica}>{formatEuro(mediaGiornaliera)}</Text>
+            </View>
+
+            {differenzaMediaPerc != null && (
+              <View style={stili.rigaStatistica}>
+                <Text style={stili.etichettaStatistica}>Rispetto alla media ultimi 3 mesi</Text>
+                <Text style={[
+                  stili.valoreStatistica,
+                  { color: differenzaMediaPerc <= 0 ? t.entrata : t.uscita },
+                ]}>
+                  {differenzaMediaPerc >= 0 ? '+' : ''}{Math.round(differenzaMediaPerc)}%
+                </Text>
+              </View>
+            )}
+
+            {topCategorieSpesa.length > 0 && (
+              <>
+                <View style={stili.separatoreCruscotto} />
+                <Text style={stili.sottotitoloStatistiche}>Categorie con più spese</Text>
+                {topCategorieSpesa.map(({ categoria, valore }) => (
+                  <View key={categoria.id} style={stili.rigaStatistica}>
+                    <View style={stili.etichettaConPuntino}>
+                      <View style={[stili.puntinoStat, { backgroundColor: categoria.colore }]} />
+                      <Text style={stili.etichettaStatistica} numberOfLines={1}>{categoria.nome}</Text>
+                    </View>
+                    <Text style={stili.valoreStatistica}>
+                      {formatEuro(valore)} · {Math.round((valore / totaleUscite) * 100)}%
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+          </View>
+        )}
+
         {/* ── Lista transazioni del periodo ── */}
         {transazioniOrdinate.length > 0 ? (
           <>
@@ -347,7 +450,7 @@ export default function RiepilogoScreen() {
           <View style={stili.cardModal}>
             <Text style={stili.titoloModal}>Reddito mensile netto</Text>
             <Text style={stili.sottotitoloModal}>
-              Inserisci il tuo stipendio netto. Viene usato per calcolare l'avanzo nel cruscotto flusso.
+              Inserisci il tuo stipendio netto. Viene usato per calcolare l' nel cruscotto flusso.
             </Text>
             <View style={stili.rigaInputReddito}>
               <Text style={stili.euroSign}>€</Text>
@@ -565,7 +668,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.bordoSottile,
       marginVertical: 10,
     },
-    cerchioAvanzo: {
+    cerchio: {
       width: 24,
       height: 24,
       borderRadius: 12,
@@ -633,6 +736,57 @@ function creaStili(t: Tema) {
       fontWeight: '700',
       color: t.corpo,
       marginBottom: 8,
+    },
+
+    // ── Statistiche avanzate ──
+    sezioneStatistiche: {
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 20,
+      padding: 18,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    rigaStatistica: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+      paddingVertical: 6,
+    },
+    etichettaStatistica: {
+      flex: 1,
+      fontSize: 13,
+      color: t.corpo,
+    },
+    valoreStatistica: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    sottotitoloStatistiche: {
+      fontSize: 11,
+      fontWeight: '700',
+      color: t.piuSottile,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: 2,
+    },
+    etichettaConPuntino: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    puntinoStat: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      flexShrink: 0,
     },
 
     // ── Lista transazioni ──
