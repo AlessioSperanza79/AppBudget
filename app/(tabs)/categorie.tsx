@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
 import { useTema, Tema } from '../../constants/tema';
+import { formatEuro } from '../../utils/formatters';
 
 const PALETTE: string[] = [
   '#2E7D32', '#66BB6A', '#E53935', '#2563EB',
@@ -46,6 +47,19 @@ export default function CategorieScreen() {
 
   const [catDaEliminare, setCatDaEliminare]           = useState<Categoria | undefined>();
   const [istDaEliminare, setIstDaEliminare]           = useState<Istituto | undefined>();
+
+  // Spesa del mese corrente per categoria, usata per la barra di avanzamento del budget
+  const speseMeseCorrente = useMemo(() => {
+    const ora = new Date();
+    const mappa = new Map<string, number>();
+    for (const tr of transazioni) {
+      if (tr.tipo !== 'uscita' || tr.ricorrente) continue;
+      const d = new Date(tr.data + 'T00:00:00');
+      if (d.getFullYear() !== ora.getFullYear() || d.getMonth() !== ora.getMonth()) continue;
+      mappa.set(tr.categoriaId, (mappa.get(tr.categoriaId) ?? 0) + tr.importo);
+    }
+    return mappa;
+  }, [transazioni]);
 
   const apriNuovaCategoria = () => {
     setCategoriaInModifica(undefined);
@@ -126,21 +140,46 @@ export default function CategorieScreen() {
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => {
             const tipo = TIPI.find((tp) => tp.key === item.tipo) ?? TIPI[1];
+            const spesa = speseMeseCorrente.get(item.id) ?? 0;
+            const budget = item.budgetMensile;
+            const perc = budget ? Math.min((spesa / budget) * 100, 100) : 0;
+            const coloreBarra = perc >= 100 ? t.uscita : perc >= 80 ? t.arancio : t.entrata;
             return (
               <View style={stili.riga}>
-                <View style={[stili.avatarCategoria, { backgroundColor: item.colore }]}>
-                  <Text style={stili.lettAvatar}>{item.nome.charAt(0).toUpperCase()}</Text>
+                <View style={stili.rigaPrincipale}>
+                  <View style={[stili.avatarCategoria, { backgroundColor: item.colore }]}>
+                    <Text style={stili.lettAvatar}>{item.nome.charAt(0).toUpperCase()}</Text>
+                  </View>
+                  <Text style={stili.nome}>{item.nome}</Text>
+                  <View style={[stili.badgeTipo, { backgroundColor: tipo.colore + '18' }]}>
+                    <Text style={[stili.testoBadgeTipo, { color: tipo.colore }]}>{tipo.label}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8}>
+                    <Ionicons name="pencil-outline" size={18} color={t.primario} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={18} color={t.uscita} />
+                  </TouchableOpacity>
                 </View>
-                <Text style={stili.nome}>{item.nome}</Text>
-                <View style={[stili.badgeTipo, { backgroundColor: tipo.colore + '18' }]}>
-                  <Text style={[stili.testoBadgeTipo, { color: tipo.colore }]}>{tipo.label}</Text>
-                </View>
-                <TouchableOpacity onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8}>
-                  <Ionicons name="pencil-outline" size={18} color={t.primario} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8}>
-                  <Ionicons name="trash-outline" size={18} color={t.uscita} />
-                </TouchableOpacity>
+
+                {budget != null && budget > 0 && (
+                  <View style={stili.budgetContenitore}>
+                    <View style={stili.budgetRigaTesto}>
+                      <Text style={[stili.budgetTesto, { color: coloreBarra }]}>
+                        {formatEuro(spesa)} di {formatEuro(budget)}
+                      </Text>
+                      {perc >= 100 && (
+                        <View style={stili.budgetAvviso}>
+                          <Ionicons name="alert-circle" size={12} color={t.uscita} />
+                          <Text style={[stili.budgetTestoAvviso, { color: t.uscita }]}>Budget superato</Text>
+                        </View>
+                      )}
+                    </View>
+                    <View style={stili.budgetBarraSfondo}>
+                      <View style={[stili.budgetBarra, { width: `${perc}%` as `${number}%`, backgroundColor: coloreBarra }]} />
+                    </View>
+                  </View>
+                )}
               </View>
             );
           }}
@@ -414,18 +453,55 @@ function creaStili(t: Tema) {
 
     // ── Lista ──
     riga: {
-      flexDirection: 'row',
-      alignItems: 'center',
       backgroundColor: t.carta,
       borderRadius: 16,
       padding: 14,
       marginBottom: 8,
-      gap: 10,
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },
       shadowOpacity: 0.05,
       shadowRadius: 6,
       elevation: 1,
+    },
+    rigaPrincipale: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+
+    // ── Barra budget ──
+    budgetContenitore: {
+      marginTop: 10,
+      gap: 6,
+    },
+    budgetRigaTesto: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    budgetTesto: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    budgetAvviso: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    budgetTestoAvviso: {
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    budgetBarraSfondo: {
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: t.bordoSottile,
+      overflow: 'hidden',
+    },
+    budgetBarra: {
+      height: 6,
+      borderRadius: 3,
     },
     avatarCategoria: {
       width: 36,

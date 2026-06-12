@@ -16,11 +16,12 @@ interface Props {
   istituto?: Istituto;
   onModifica?: () => void;
   onElimina?: () => void;
+  onDuplica?: () => void;
   mostraAzioni?: boolean;
 }
 
 export default function TransactionItem({
-  transazione, categoria, istituto, onModifica, onElimina, mostraAzioni = true,
+  transazione, categoria, istituto, onModifica, onElimina, onDuplica, mostraAzioni = true,
 }: Props) {
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -71,6 +72,11 @@ export default function TransactionItem({
         </Text>
         {mostraAzioni && (
           <View style={stili.azioni}>
+            {onDuplica && (
+              <TouchableOpacity onPress={onDuplica} hitSlop={8} style={stili.btnAzione}>
+                <Ionicons name="copy-outline" size={15} color={t.piuSottile} />
+              </TouchableOpacity>
+            )}
             {onModifica && (
               <TouchableOpacity onPress={onModifica} hitSlop={8} style={stili.btnAzione}>
                 <Ionicons name="pencil-outline" size={15} color={t.piuSottile} />

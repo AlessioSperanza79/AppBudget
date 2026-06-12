@@ -7,7 +7,10 @@ import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
 import { useTema, Tema } from '../../constants/tema';
-import { Transazione } from '../../types';
+import { Transazione, TipoTransazione, TipologiaConto } from '../../types';
+import { oggiIso } from '../../utils/formatters';
+import { generaCsvTransazioni } from '../../utils/csv';
+import { esportaCsv } from '../../utils/exportCsv';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -30,6 +33,20 @@ export default function TransazioniScreen() {
   const [periodo, setPeriodo] = useState<Periodo>('mensile');
   const [dataCorrente, setDataCorrente] = useState(new Date());
   const [cerca, setCerca] = useState('');
+
+  const [modaleFiltri, setModaleFiltri] = useState(false);
+  const [filtroTipo, setFiltroTipo] = useState<TipoTransazione | null>(null);
+  const [filtroIstitutoId, setFiltroIstitutoId] = useState<string | null>(null);
+  const [filtroTipologia, setFiltroTipologia] = useState<TipologiaConto | null>(null);
+
+  const numFiltriAttivi =
+    (filtroTipo ? 1 : 0) + (filtroIstitutoId ? 1 : 0) + (filtroTipologia ? 1 : 0);
+
+  const azzeraFiltri = () => {
+    setFiltroTipo(null);
+    setFiltroIstitutoId(null);
+    setFiltroTipologia(null);
+  };
 
   const naviga = (direzione: 1 | -1) => {
     setDataCorrente((prev) => {
@@ -64,17 +81,32 @@ export default function TransazioniScreen() {
   }, [transazioni, periodo, dataCorrente]);
 
   const transazioniVisibili = useMemo(() => {
-    if (!cerca.trim()) return transazioniOrdinate;
-    const q = cerca.trim().toLowerCase();
-    return transazioniOrdinate.filter((tr) => {
-      const cat = categorie.find((c) => c.id === tr.categoriaId);
-      return (
-        tr.nota?.toLowerCase().includes(q) ||
-        cat?.nome.toLowerCase().includes(q) ||
-        String(tr.importo).includes(q)
-      );
-    });
-  }, [transazioniOrdinate, cerca, categorie]);
+    let risultato = transazioniOrdinate;
+
+    if (filtroTipo) {
+      risultato = risultato.filter((tr) => tr.tipo === filtroTipo);
+    }
+    if (filtroIstitutoId) {
+      risultato = risultato.filter((tr) => tr.istitutoId === filtroIstitutoId);
+    }
+    if (filtroTipologia) {
+      risultato = risultato.filter((tr) => tr.tipologia === filtroTipologia);
+    }
+
+    if (cerca.trim()) {
+      const q = cerca.trim().toLowerCase();
+      risultato = risultato.filter((tr) => {
+        const cat = categorie.find((c) => c.id === tr.categoriaId);
+        return (
+          tr.nota?.toLowerCase().includes(q) ||
+          cat?.nome.toLowerCase().includes(q) ||
+          String(tr.importo).includes(q)
+        );
+      });
+    }
+
+    return risultato;
+  }, [transazioniOrdinate, cerca, categorie, filtroTipo, filtroIstitutoId, filtroTipologia]);
 
   const apriNuova = () => {
     setTransazioneSelezionata(undefined);
@@ -92,6 +124,24 @@ export default function TransazioniScreen() {
     } else {
       aggiungiTransazione(dati);
     }
+  };
+
+  const gestisciExport = () => {
+    const csv = generaCsvTransazioni(transazioniVisibili, categorie, istituti);
+    const nomeFile = `transazioni_${periodoLabel.replace(/\s+/g, '_').toLowerCase()}.csv`;
+    esportaCsv(nomeFile, csv);
+  };
+
+  const gestisciDuplica = (tr: Transazione) => {
+    aggiungiTransazione({
+      importo: tr.importo,
+      tipo: tr.tipo,
+      categoriaId: tr.categoriaId,
+      data: oggiIso(),
+      ...(tr.nota       != null && { nota: tr.nota }),
+      ...(tr.tipologia  != null && { tipologia: tr.tipologia }),
+      ...(tr.istitutoId != null && { istitutoId: tr.istitutoId }),
+    });
   };
 
   return (
@@ -123,21 +173,49 @@ export default function TransazioniScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={stili.barraRicerca}>
-          <Ionicons name="search" size={16} color={t.piuSottile} />
-          <TextInput
-            style={stili.inputRicerca}
-            value={cerca}
-            onChangeText={setCerca}
-            placeholder="Cerca per nota, categoria o importo…"
-            placeholderTextColor={t.segnaposto}
-            returnKeyType="search"
-          />
-          {cerca.length > 0 && (
-            <TouchableOpacity onPress={() => setCerca('')} hitSlop={8}>
-              <Ionicons name="close-circle" size={16} color={t.piuSottile} />
-            </TouchableOpacity>
-          )}
+        <View style={stili.rigaRicerca}>
+          <View style={stili.barraRicerca}>
+            <Ionicons name="search" size={16} color={t.piuSottile} />
+            <TextInput
+              style={stili.inputRicerca}
+              value={cerca}
+              onChangeText={setCerca}
+              placeholder="Cerca per nota, categoria o importo…"
+              placeholderTextColor={t.segnaposto}
+              returnKeyType="search"
+            />
+            {cerca.length > 0 && (
+              <TouchableOpacity onPress={() => setCerca('')} hitSlop={8}>
+                <Ionicons name="close-circle" size={16} color={t.piuSottile} />
+              </TouchableOpacity>
+            )}
+          </View>
+          <TouchableOpacity
+            style={[stili.btnFiltri, numFiltriAttivi > 0 && stili.btnFiltriAttivo]}
+            onPress={() => setModaleFiltri(true)}
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={numFiltriAttivi > 0 ? '#FFF' : t.sottile}
+            />
+            {numFiltriAttivi > 0 && (
+              <View style={stili.badgeFiltri}>
+                <Text style={stili.testoBadgeFiltri}>{numFiltriAttivi}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={stili.btnFiltri}
+            onPress={gestisciExport}
+            disabled={transazioniVisibili.length === 0}
+          >
+            <Ionicons
+              name="download-outline"
+              size={18}
+              color={transazioniVisibili.length === 0 ? t.piuSottile : t.sottile}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -151,6 +229,7 @@ export default function TransazioniScreen() {
             istituto={istituti.find((i) => i.id === item.istitutoId)}
             onModifica={() => apriModifica(item)}
             onElimina={() => setTransazioneDaEliminare(item.id)}
+            onDuplica={() => gestisciDuplica(item)}
           />
         )}
         ListEmptyComponent={
@@ -206,6 +285,84 @@ export default function TransazioniScreen() {
                 }}
               >
                 <Text style={stili.testoElimina}>Elimina</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── Modal filtri avanzati ── */}
+      <Modal visible={modaleFiltri} transparent animationType="fade">
+        <View style={stili.sfondoModal}>
+          <View style={stili.cartaModal}>
+            <Text style={stili.titoloModal}>Filtri</Text>
+
+            <Text style={stili.etichettaFiltro}>Tipo</Text>
+            <View style={stili.rigaChip}>
+              {([
+                { valore: null,        label: 'Tutte' },
+                { valore: 'entrata' as TipoTransazione, label: 'Entrate' },
+                { valore: 'uscita'  as TipoTransazione, label: 'Uscite' },
+              ]).map(({ valore, label }) => (
+                <TouchableOpacity
+                  key={label}
+                  style={[stili.chip, filtroTipo === valore && stili.chipAttivo]}
+                  onPress={() => setFiltroTipo(valore)}
+                >
+                  <Text style={[stili.testoChip, filtroTipo === valore && stili.testoChipAttivo]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={stili.etichettaFiltro}>Tipologia conto</Text>
+            <View style={stili.rigaChip}>
+              {([
+                { valore: null,                            label: 'Tutte' },
+                { valore: 'conto_corrente' as TipologiaConto, label: 'Conto corrente' },
+                { valore: 'carta_credito'  as TipologiaConto, label: 'Carta di credito' },
+              ]).map(({ valore, label }) => (
+                <TouchableOpacity
+                  key={label}
+                  style={[stili.chip, filtroTipologia === valore && stili.chipAttivo]}
+                  onPress={() => setFiltroTipologia(valore)}
+                >
+                  <Text style={[stili.testoChip, filtroTipologia === valore && stili.testoChipAttivo]}>{label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {istituti.length > 0 && (
+              <>
+                <Text style={stili.etichettaFiltro}>Conto / Istituto</Text>
+                <View style={stili.rigaChip}>
+                  <TouchableOpacity
+                    style={[stili.chip, filtroIstitutoId === null && stili.chipAttivo]}
+                    onPress={() => setFiltroIstitutoId(null)}
+                  >
+                    <Text style={[stili.testoChip, filtroIstitutoId === null && stili.testoChipAttivo]}>Tutti</Text>
+                  </TouchableOpacity>
+                  {istituti.map((ist) => (
+                    <TouchableOpacity
+                      key={ist.id}
+                      style={[stili.chip, filtroIstitutoId === ist.id && stili.chipAttivo]}
+                      onPress={() => setFiltroIstitutoId(ist.id)}
+                    >
+                      <Text style={[stili.testoChip, filtroIstitutoId === ist.id && stili.testoChipAttivo]}>{ist.nome}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            <View style={stili.rigaBtnModal}>
+              <TouchableOpacity style={[stili.btnModal, stili.btnAnnulla]} onPress={azzeraFiltri}>
+                <Text style={stili.testoAnnulla}>Azzera</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[stili.btnModal, stili.btnApplica]}
+                onPress={() => setModaleFiltri(false)}
+              >
+                <Text style={stili.testoElimina}>Applica</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -287,7 +444,13 @@ function creaStili(t: Tema) {
     },
 
     // ── Barra ricerca ──
+    rigaRicerca: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
     barraRicerca: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       backgroundColor: t.carta,
@@ -305,6 +468,83 @@ function creaStili(t: Tema) {
       flex: 1,
       fontSize: 14,
       color: t.titolo,
+    },
+
+    // ── Pulsante filtri ──
+    btnFiltri: {
+      width: 42,
+      height: 42,
+      borderRadius: 12,
+      backgroundColor: t.carta,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    btnFiltriAttivo: {
+      backgroundColor: t.primario,
+    },
+    badgeFiltri: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      minWidth: 18,
+      height: 18,
+      borderRadius: 9,
+      backgroundColor: t.uscita,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 4,
+    },
+    testoBadgeFiltri: {
+      fontSize: 10,
+      fontWeight: '700',
+      color: '#FFF',
+    },
+
+    // ── Modal filtri ──
+    etichettaFiltro: {
+      alignSelf: 'flex-start',
+      fontSize: 11,
+      fontWeight: '700',
+      color: t.piuSottile,
+      marginTop: 16,
+      marginBottom: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+    },
+    rigaChip: {
+      alignSelf: 'stretch',
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      backgroundColor: t.sfondoInput,
+    },
+    chipAttivo: {
+      backgroundColor: t.primarioSfondo,
+      borderColor: t.primario,
+    },
+    testoChip: {
+      fontSize: 12,
+      color: t.sottile,
+      fontWeight: '500',
+    },
+    testoChipAttivo: {
+      color: t.primario,
+      fontWeight: '700',
+    },
+    btnApplica: {
+      backgroundColor: t.primario,
     },
 
     // ── FAB ──

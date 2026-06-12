@@ -11,6 +11,10 @@ npm start          # apre il menu Expo
 # poi premi 'a' per Android (Expo Go) oppure 'w' per il browser
 ```
 
+## Workflow di deploy
+Il branch `main` è collegato a un progetto Vercel (https://app-budget-eight.vercel.app/) con deploy automatico.
+Dopo ogni modifica approvata dall'utente, fai commit e push su `main` così Vercel rigenera il deploy online.
+
 ## Versioni installate (2026-06-05)
 | Pacchetto | Versione |
 |---|---|
