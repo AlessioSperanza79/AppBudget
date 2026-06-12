@@ -9,6 +9,8 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, Transazione } from '../../types';
 import { formatEuro } from '../../utils/formatters';
 import TransactionItem from '../../components/TransactionItem';
+import FadeInView from '../../components/FadeInView';
+import PressableScale from '../../components/PressableScale';
 import { useTema, Tema } from '../../constants/tema';
 
 type VistaAnalisi = 'mensile' | 'annuale';
@@ -289,19 +291,19 @@ export default function AnalisiScreen() {
 
       {/* ── Navigatore periodo ── */}
       <View style={stili.navigatoreContenitore}>
-        <TouchableOpacity onPress={navigaPrecedente} hitSlop={12} style={stili.btnNav}>
+        <PressableScale onPress={navigaPrecedente} hitSlop={12} style={stili.btnNav}>
           <Ionicons name="chevron-back" size={18} color={t.sottile} />
-        </TouchableOpacity>
+        </PressableScale>
         <Text style={stili.testoPeriodo}>{periodoLabel}</Text>
-        <TouchableOpacity onPress={navigaSuccessivo} hitSlop={12} style={stili.btnNav}>
+        <PressableScale onPress={navigaSuccessivo} hitSlop={12} style={stili.btnNav}>
           <Ionicons name="chevron-forward" size={18} color={t.sottile} />
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
 
         {/* ── Card saldo / entrate / uscite ── */}
-        <View style={stili.rigaCard}>
+        <FadeInView style={stili.rigaCard}>
           <View style={[stili.card, { backgroundColor: t.entrataSfondo }]}>
             <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
             <Text style={[stili.etichettaCard, { color: t.entrata }]}>Entrate</Text>
@@ -327,7 +329,7 @@ export default function AnalisiScreen() {
               {formatEuro(saldo)}
             </Text>
           </View>
-        </View>
+        </FadeInView>
 
         {/* ── Tasso di risparmio ── */}
         <View style={stili.cardMetrica}>
@@ -403,10 +405,10 @@ export default function AnalisiScreen() {
 
         {/* ── Esporta CSV (solo web) ── */}
         {Platform.OS === 'web' && (
-          <TouchableOpacity style={stili.btnCSV} onPress={esportaCSV}>
+          <PressableScale style={stili.btnCSV} onPress={esportaCSV}>
             <Ionicons name="download-outline" size={16} color={t.primario} />
             <Text style={stili.testoCSV}>Esporta CSV — {periodoLabel}</Text>
-          </TouchableOpacity>
+          </PressableScale>
         )}
 
         {/* ── Uscite per categoria ── */}
@@ -498,13 +500,13 @@ export default function AnalisiScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setDettaglio(undefined)}
               hitSlop={10}
               style={stili.btnChiudiModal}
             >
               <Ionicons name="close" size={20} color={t.sottile} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {/* ── Editor budget (solo uscite) ── */}
@@ -522,7 +524,7 @@ export default function AnalisiScreen() {
                   returnKeyType="done"
                   placeholderTextColor={t.segnaposto}
                 />
-                <TouchableOpacity
+                <PressableScale
                   style={stili.btnSalvaBudget}
                   onPress={() => {
                     const v = parseFloat(budgetInput.replace(',', '.'));
@@ -530,7 +532,7 @@ export default function AnalisiScreen() {
                   }}
                 >
                   <Text style={stili.testoSalvaBudget}>Imposta</Text>
-                </TouchableOpacity>
+                </PressableScale>
               </View>
             </View>
           )}
@@ -582,13 +584,13 @@ export default function AnalisiScreen() {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
+            <PressableScale
               onPress={() => setDettaglioIstituto(undefined)}
               hitSlop={10}
               style={stili.btnChiudiModal}
             >
               <Ionicons name="close" size={20} color={t.sottile} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {transazioniDettaglioIstituto.length > 0 && (() => {

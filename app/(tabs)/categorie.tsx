@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
+import PressableScale from '../../components/PressableScale';
 import { useTema, Tema } from '../../constants/tema';
 import { formatEuro } from '../../utils/formatters';
 
@@ -157,12 +158,12 @@ export default function CategorieScreen() {
                   <View style={[stili.badgeTipo, { backgroundColor: tipo.colore + '18' }]}>
                     <Text style={[stili.testoBadgeTipo, { color: tipo.colore }]}>{tipo.label}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica categoria')}>
+                  <PressableScale onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica categoria')}>
                     <Ionicons name="pencil-outline" size={18} color={t.primario} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina categoria')}>
+                  </PressableScale>
+                  <PressableScale onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina categoria')}>
                     <Ionicons name="trash-outline" size={18} color={t.uscita} />
-                  </TouchableOpacity>
+                  </PressableScale>
                 </View>
 
                 {budget != null && budget > 0 && (
@@ -187,10 +188,10 @@ export default function CategorieScreen() {
             );
           }}
           ListFooterComponent={
-            <TouchableOpacity style={stili.btnAggiungi} onPress={apriNuovaCategoria}>
+            <PressableScale style={stili.btnAggiungi} onPress={apriNuovaCategoria}>
               <Ionicons name="add-circle-outline" size={20} color={t.primario} />
               <Text style={stili.testoAggiungi}>Aggiungi categoria</Text>
-            </TouchableOpacity>
+            </PressableScale>
           }
         />
       )}
@@ -207,19 +208,19 @@ export default function CategorieScreen() {
                 <Ionicons name="business-outline" size={16} color="#FFF" />
               </View>
               <Text style={stili.nome}>{item.nome}</Text>
-              <TouchableOpacity onPress={() => apriModificaIstituto(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica conto')}>
+              <PressableScale onPress={() => apriModificaIstituto(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica conto')}>
                 <Ionicons name="pencil-outline" size={18} color={t.primario} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setIstDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina conto')}>
+              </PressableScale>
+              <PressableScale onPress={() => setIstDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina conto')}>
                 <Ionicons name="trash-outline" size={18} color={t.uscita} />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           )}
           ListFooterComponent={
-            <TouchableOpacity style={stili.btnAggiungi} onPress={apriNuovoIstituto}>
+            <PressableScale style={stili.btnAggiungi} onPress={apriNuovoIstituto}>
               <Ionicons name="add-circle-outline" size={20} color={t.primario} />
               <Text style={stili.testoAggiungi}>Aggiungi istituto</Text>
-            </TouchableOpacity>
+            </PressableScale>
           }
         />
       )}

@@ -6,6 +6,8 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
+import FadeInView from '../../components/FadeInView';
+import PressableScale from '../../components/PressableScale';
 import { useTema, Tema } from '../../constants/tema';
 import { Transazione, TipoTransazione, TipologiaConto } from '../../types';
 import { oggiIso } from '../../utils/formatters';
@@ -166,7 +168,7 @@ export default function TransazioniScreen() {
     <View style={stili.contenitore}>
 
       {/* ── Toggle Mensile / Annuale + Navigatore ── */}
-      <View style={stili.controlliContenitore}>
+      <FadeInView style={stili.controlliContenitore}>
         <View style={stili.toggle}>
           {(['mensile', 'annuale'] as Periodo[]).map((p) => (
             <TouchableOpacity
@@ -182,13 +184,13 @@ export default function TransazioniScreen() {
         </View>
 
         <View style={stili.navigatore}>
-          <TouchableOpacity onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
+          <PressableScale onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
             <Ionicons name="chevron-back" size={18} color={t.sottile} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text style={stili.labelPeriodo}>{periodoLabel}</Text>
-          <TouchableOpacity onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
+          <PressableScale onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
             <Ionicons name="chevron-forward" size={18} color={t.sottile} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         <View style={stili.rigaRicerca}>
@@ -208,7 +210,7 @@ export default function TransazioniScreen() {
               </TouchableOpacity>
             )}
           </View>
-          <TouchableOpacity
+          <PressableScale
             style={[stili.btnFiltri, numFiltriAttivi > 0 && stili.btnFiltriAttivo]}
             onPress={() => setModaleFiltri(true)}
             {...suggerimento('Filtri avanzati')}
@@ -223,8 +225,8 @@ export default function TransazioniScreen() {
                 <Text style={stili.testoBadgeFiltri}>{numFiltriAttivi}</Text>
               </View>
             )}
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             style={stili.btnFiltri}
             onPress={gestisciExport}
             disabled={transazioniVisibili.length === 0}
@@ -235,9 +237,9 @@ export default function TransazioniScreen() {
               size={18}
               color={transazioniVisibili.length === 0 ? t.piuSottile : t.sottile}
             />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
-      </View>
+      </FadeInView>
 
       <FlatList
         data={transazioniVisibili}
@@ -268,9 +270,9 @@ export default function TransazioniScreen() {
       />
 
       {/* Pulsante flottante */}
-      <TouchableOpacity style={stili.fab} onPress={apriNuova} activeOpacity={0.85} {...suggerimento('Inserisci Entrata/Uscita')}>
+      <PressableScale style={stili.fab} onPress={apriNuova} {...suggerimento('Inserisci Entrata/Uscita')}>
         <Ionicons name="add" size={28} color="#FFF" />
-      </TouchableOpacity>
+      </PressableScale>
 
       <TransactionForm
         visibile={modaleVisibile}

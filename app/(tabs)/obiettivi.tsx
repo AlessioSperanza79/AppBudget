@@ -10,6 +10,7 @@ import { Obiettivo } from '../../types';
 import { useTema, Tema } from '../../constants/tema';
 import { formatEuro, formatData } from '../../utils/formatters';
 import EmptyState from '../../components/EmptyState';
+import PressableScale from '../../components/PressableScale';
 import SelectorData from '../../components/SelectorData';
 
 const PALETTE: string[] = [
@@ -133,12 +134,12 @@ export default function ObiettiviScreen() {
                     <Text style={stili.scadenza}>Scadenza: {formatData(item.dataScadenza)}</Text>
                   )}
                 </View>
-                <TouchableOpacity onPress={() => apriModificaObiettivo(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica obiettivo')}>
+                <PressableScale onPress={() => apriModificaObiettivo(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica obiettivo')}>
                   <Ionicons name="pencil-outline" size={18} color={t.primario} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setObDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina obiettivo')}>
+                </PressableScale>
+                <PressableScale onPress={() => setObDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina obiettivo')}>
                   <Ionicons name="trash-outline" size={18} color={t.uscita} />
-                </TouchableOpacity>
+                </PressableScale>
               </View>
 
               <View style={stili.progressoContenitore}>
@@ -153,18 +154,18 @@ export default function ObiettiviScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity style={stili.btnFondi} onPress={() => apriFondi(item)}>
+              <PressableScale style={stili.btnFondi} onPress={() => apriFondi(item)}>
                 <Ionicons name="cash-outline" size={16} color={t.primario} />
                 <Text style={stili.testoBtnFondi}>Gestisci fondi</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           );
         }}
         ListFooterComponent={
-          <TouchableOpacity style={stili.btnAggiungi} onPress={apriNuovoObiettivo}>
+          <PressableScale style={stili.btnAggiungi} onPress={apriNuovoObiettivo}>
             <Ionicons name="add-circle-outline" size={20} color={t.primario} />
             <Text style={stili.testoAggiungi}>Aggiungi obiettivo</Text>
-          </TouchableOpacity>
+          </PressableScale>
         }
       />
 

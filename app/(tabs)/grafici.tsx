@@ -6,6 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatEuro } from '../../utils/formatters';
 import EmptyState from '../../components/EmptyState';
+import FadeInView from '../../components/FadeInView';
+import PressableScale from '../../components/PressableScale';
 import { useTema, Tema } from '../../constants/tema';
 
 const MESI       =['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -219,7 +221,7 @@ export default function GraficiScreen() {
     <ScrollView style={stili.contenitore} contentContainerStyle={{ paddingBottom: 40 }}>
 
       {/* ── Toggle + navigatore ── */}
-      <View style={stili.controlliContenitore}>
+      <FadeInView style={stili.controlliContenitore}>
         <View style={stili.toggle}>
           {(['mensile', 'annuale'] as Vista[]).map((v) => (
             <TouchableOpacity
@@ -235,18 +237,18 @@ export default function GraficiScreen() {
         </View>
 
         <View style={stili.navigatore}>
-          <TouchableOpacity onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
+          <PressableScale onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
             <Ionicons name="chevron-back" size={18} color={t.sottile} />
-          </TouchableOpacity>
+          </PressableScale>
           <Text style={stili.labelPeriodo}>{labelPeriodo}</Text>
-          <TouchableOpacity onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
+          <PressableScale onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
             <Ionicons name="chevron-forward" size={18} color={t.sottile} />
-          </TouchableOpacity>
+          </PressableScale>
         </View>
-      </View>
+      </FadeInView>
 
       {/* ── Cards sommario ── */}
-      <View style={stili.sommario}>
+      <FadeInView ritardo={80} style={stili.sommario}>
         <View style={[stili.card, { backgroundColor: t.entrataSfondo }]}>
           <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
           <Text style={[stili.cardTitolo, { color: t.entrata }]}>Entrate</Text>
@@ -268,7 +270,7 @@ export default function GraficiScreen() {
             {formatEuro(saldo)}
           </Text>
         </View>
-      </View>
+      </FadeInView>
 
       {/* ══════════════════════════════ VISTA MENSILE ══════════════════════════════ */}
       {vista === 'mensile' && (

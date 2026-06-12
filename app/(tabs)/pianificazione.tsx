@@ -10,6 +10,8 @@ import { formatEuro } from '../../utils/formatters';
 import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
+import FadeInView from '../../components/FadeInView';
+import PressableScale from '../../components/PressableScale';
 import { useTema, Tema } from '../../constants/tema';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
@@ -85,7 +87,7 @@ export default function PianificazioneScreen() {
 
         {/* ── Riepilogo modelli ── */}
         {ricorrenti.length > 0 && (
-          <View style={stili.riepilogo}>
+          <FadeInView style={stili.riepilogo}>
             <View style={[stili.cardRiepilogo, { backgroundColor: t.entrataSfondo }]}>
               <View style={stili.rigaIconaRiep}>
                 <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
@@ -104,7 +106,7 @@ export default function PianificazioneScreen() {
                 -{formatEuro(totaleUscite)}
               </Text>
             </View>
-          </View>
+          </FadeInView>
         )}
 
         {/* ── Lista modelli ── */}
@@ -134,7 +136,7 @@ export default function PianificazioneScreen() {
 
         {/* ── Card applica al mese (solo per modelli senza data fine automatica) ── */}
         {ricorrentiManuali.length > 0 && (
-          <View style={stili.cardApplica}>
+          <FadeInView ritardo={80} style={stili.cardApplica}>
             <View style={stili.intestazioneApplica}>
               <View style={stili.cerchioApplicaIcon}>
                 <Ionicons name="calendar-outline" size={18} color={t.primario} />
@@ -148,16 +150,16 @@ export default function PianificazioneScreen() {
             </View>
 
             <View style={stili.navigatore}>
-              <TouchableOpacity onPress={() => navigaMese(-1)} hitSlop={10} style={stili.btnNav}>
+              <PressableScale onPress={() => navigaMese(-1)} hitSlop={10} style={stili.btnNav}>
                 <Ionicons name="chevron-back" size={18} color={t.sottile} />
-              </TouchableOpacity>
+              </PressableScale>
               <Text style={stili.labelMese}>{MESI[meseTarget]} {annoTarget}</Text>
-              <TouchableOpacity onPress={() => navigaMese(1)} hitSlop={10} style={stili.btnNav}>
+              <PressableScale onPress={() => navigaMese(1)} hitSlop={10} style={stili.btnNav}>
                 <Ionicons name="chevron-forward" size={18} color={t.sottile} />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
 
-            <TouchableOpacity
+            <PressableScale
               style={[stili.btnApplica, applicando && { opacity: 0.6 }]}
               onPress={handleApplica}
               disabled={applicando}
@@ -166,21 +168,20 @@ export default function PianificazioneScreen() {
               <Text style={stili.testoBtnApplica}>
                 {applicando ? 'Creazione in corso…' : `Applica ${ricorrentiManuali.length} modell${ricorrentiManuali.length === 1 ? 'o' : 'i'} a ${MESI[meseTarget]}`}
               </Text>
-            </TouchableOpacity>
-          </View>
+            </PressableScale>
+          </FadeInView>
         )}
 
       </ScrollView>
 
       {/* ── FAB ── */}
-      <TouchableOpacity
+      <PressableScale
         style={stili.fab}
         onPress={() => { setTransazioneSelezionata(undefined); setModaleVisibile(true); }}
-        activeOpacity={0.85}
         {...suggerimento('Nuovo modello ricorrente')}
       >
         <Ionicons name="add" size={28} color="#FFF" />
-      </TouchableOpacity>
+      </PressableScale>
 
       <TransactionForm
         visibile={modaleVisibile}
