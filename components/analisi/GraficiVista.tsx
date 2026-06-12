@@ -1,50 +1,34 @@
-// ── Schermata Grafici: vista mensile (torta + linea) e annuale (barre + categorie) ──
-import { useState, useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
+// ── Vista "Grafici" della schermata Analisi: torta + linee + barre ──
+import { useMemo } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-gifted-charts';
-import { Ionicons } from '@expo/vector-icons';
-import { useFinanceStore } from '../../store/useFinanceStore';
+import { Tema } from '../../constants/tema';
 import { formatEuro } from '../../utils/formatters';
-import EmptyState from '../../components/EmptyState';
-import FadeInView from '../../components/FadeInView';
-import PressableScale from '../../components/PressableScale';
-import { useTema, Tema } from '../../constants/tema';
+import { Categoria, Transazione } from '../../types';
 
-const MESI       =['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const MESI       = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 const MESI_BREVI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
 type Vista = 'mensile' | 'annuale';
 
-export default function GraficiScreen() {
-  const { transazioni, categorie } = useFinanceStore();
+interface Props {
+  transazioni: Transazione[];
+  categorie: Categoria[];
+  t: Tema;
+  vista: Vista;
+  anno: number;
+  mese: number;
+}
 
-  const t = useTema();
+export default function GraficiVista({ transazioni, categorie, t, vista, anno, mese }: Props) {
   const stili = useMemo(() => creaStili(t), [t]);
 
   const { width: LARGHEZZA } = useWindowDimensions();
   // margini sezione (16×2=32) + padding sezione (20×2=40) + asse-y gifted-charts (35) = 107
   const LARGHEZZA_CHART = LARGHEZZA - 108;
 
-  const [vista, setVista] = useState<Vista>('mensile');
-  const [annoSel, setAnnoSel] = useState(new Date().getFullYear());
-  const [meseSel, setMeseSel] = useState(new Date().getMonth());
-
-  const naviga = (dir: 1 | -1) => {
-    if (vista === 'annuale') {
-      setAnnoSel((a) => a + dir);
-    } else {
-      let nm = meseSel + dir;
-      let na = annoSel;
-      if (nm < 0)  { nm = 11; na--; }
-      if (nm > 11) { nm = 0;  na++; }
-      setMeseSel(nm);
-      setAnnoSel(na);
-    }
-  };
-
-  const labelPeriodo = vista === 'annuale'
-    ? String(annoSel)
-    : `${MESI[meseSel]} ${annoSel}`;
+  const annoSel = anno;
+  const meseSel = mese;
 
   const mesiAnno = useMemo(() =>
     Array.from({ length: 12 }, (_, i) => {
@@ -159,24 +143,10 @@ export default function GraficiScreen() {
     () => transazioniFiltrateMese.filter((tr) => tr.tipo === 'uscita').reduce((s, tr) => s + tr.importo, 0),
     [transazioniFiltrateMese],
   );
-  const saldoMese = totaleEntrateMese - totaleUsciteMese;
 
   const totaleEntrateAnno = mesiAnno.reduce((s, m) => s + m.entrate, 0);
   const totaleUsciteAnno  = mesiAnno.reduce((s, m) => s + m.uscite,  0);
   const saldoAnno         = totaleEntrateAnno - totaleUsciteAnno;
-
-  const totaleEntrate = vista === 'mensile' ? totaleEntrateMese : totaleEntrateAnno;
-  const totaleUscite  = vista === 'mensile' ? totaleUsciteMese  : totaleUsciteAnno;
-  const saldo         = vista === 'mensile' ? saldoMese         : saldoAnno;
-
-  if (transazioni.filter((tr) => !tr.ricorrente).length === 0) {
-    return (
-      <EmptyState
-        messaggio={'Nessun dato da mostrare.\nAggiungi alcune transazioni per vedere i grafici.'}
-        icona="bar-chart-outline"
-      />
-    );
-  }
 
   const datiGruppati = mesiAnno.flatMap((m, i) => {
     const s = m.entrate - m.uscite;
@@ -219,58 +189,6 @@ export default function GraficiScreen() {
 
   return (
     <ScrollView style={stili.contenitore} contentContainerStyle={{ paddingBottom: 40 }}>
-
-      {/* ── Toggle + navigatore ── */}
-      <FadeInView style={stili.controlliContenitore}>
-        <View style={stili.toggle}>
-          {(['mensile', 'annuale'] as Vista[]).map((v) => (
-            <TouchableOpacity
-              key={v}
-              style={[stili.toggleBtn, vista === v && stili.toggleBtnAttivo]}
-              onPress={() => setVista(v)}
-            >
-              <Text style={[stili.toggleTesto, vista === v && stili.toggleTestoAttivo]}>
-                {v === 'mensile' ? 'Mensile' : 'Annuale'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={stili.navigatore}>
-          <PressableScale onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
-            <Ionicons name="chevron-back" size={18} color={t.sottile} />
-          </PressableScale>
-          <Text style={stili.labelPeriodo}>{labelPeriodo}</Text>
-          <PressableScale onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
-            <Ionicons name="chevron-forward" size={18} color={t.sottile} />
-          </PressableScale>
-        </View>
-      </FadeInView>
-
-      {/* ── Cards sommario ── */}
-      <FadeInView ritardo={80} style={stili.sommario}>
-        <View style={[stili.card, { backgroundColor: t.entrataSfondo }]}>
-          <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
-          <Text style={[stili.cardTitolo, { color: t.entrata }]}>Entrate</Text>
-          <Text style={[stili.cardValore, { color: t.entrata }]} numberOfLines={1}>
-            {formatEuro(totaleEntrate)}
-          </Text>
-        </View>
-        <View style={[stili.card, { backgroundColor: t.uscitaSfondo }]}>
-          <Ionicons name="arrow-down-circle-outline" size={16} color={t.uscita} />
-          <Text style={[stili.cardTitolo, { color: t.uscita }]}>Uscite</Text>
-          <Text style={[stili.cardValore, { color: t.uscita }]} numberOfLines={1}>
-            {formatEuro(totaleUscite)}
-          </Text>
-        </View>
-        <View style={[stili.card, { backgroundColor: saldo >= 0 ? t.primarioSfondo : t.arancioSfondo }]}>
-          <Ionicons name="stats-chart-outline" size={16} color={saldo >= 0 ? t.primario : t.arancio} />
-          <Text style={[stili.cardTitolo, { color: saldo >= 0 ? t.primario : t.arancio }]}>Saldo</Text>
-          <Text style={[stili.cardValore, { color: saldo >= 0 ? t.entrata : t.uscita }]} numberOfLines={1}>
-            {formatEuro(saldo)}
-          </Text>
-        </View>
-      </FadeInView>
 
       {/* ══════════════════════════════ VISTA MENSILE ══════════════════════════════ */}
       {vista === 'mensile' && (
@@ -591,94 +509,6 @@ function creaStili(t: Tema) {
     contenitore: {
       flex: 1,
       backgroundColor: t.sfondo,
-    },
-
-    // ── Controlli periodo ──
-    controlliContenitore: {
-      paddingHorizontal: 16,
-      paddingTop: 16,
-      paddingBottom: 4,
-      gap: 10,
-    },
-    toggle: {
-      flexDirection: 'row',
-      backgroundColor: t.toggleSfondo,
-      borderRadius: 12,
-      padding: 4,
-    },
-    toggleBtn: {
-      flex: 1,
-      paddingVertical: 8,
-      borderRadius: 9,
-      alignItems: 'center',
-    },
-    toggleBtnAttivo: {
-      backgroundColor: t.toggleAttivo,
-      shadowColor: t.ombra,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 2,
-    },
-    toggleTesto: {
-      fontSize: 14,
-      fontWeight: '500',
-      color: t.sottile,
-    },
-    toggleTestoAttivo: {
-      color: t.titolo,
-      fontWeight: '700',
-    },
-    navigatore: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: t.carta,
-      borderRadius: 12,
-      paddingVertical: 10,
-      paddingHorizontal: 10,
-      shadowColor: t.ombra,
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 1,
-    },
-    btnNav: {
-      width: 32,
-      height: 32,
-      borderRadius: 8,
-      backgroundColor: t.superfice,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    labelPeriodo: {
-      fontSize: 15,
-      fontWeight: '700',
-      color: t.titolo,
-    },
-
-    // ── Cards sommario ──
-    sommario: {
-      flexDirection: 'row',
-      gap: 8,
-      paddingHorizontal: 16,
-      paddingTop: 12,
-      marginBottom: 4,
-    },
-    card: {
-      flex: 1,
-      borderRadius: 16,
-      padding: 12,
-      alignItems: 'center',
-      gap: 4,
-    },
-    cardTitolo: {
-      fontSize: 11,
-      fontWeight: '600',
-    },
-    cardValore: {
-      fontSize: 13,
-      fontWeight: '700',
     },
 
     // ── Sezione generica ──

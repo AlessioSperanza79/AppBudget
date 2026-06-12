@@ -1,4 +1,4 @@
-// ── Schermata Obiettivi: salvadanai virtuali con barra di avanzamento ──
+// ── Vista "Obiettivi" della schermata Pianifica: salvadanai virtuali con barra di avanzamento ──
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
@@ -27,7 +27,7 @@ const dataScadenzaDefault = (): string => {
   return d.toISOString().slice(0, 10);
 };
 
-export default function ObiettiviScreen() {
+export default function ObiettiviVista() {
   const { obiettivi, aggiungiObiettivo, modificaObiettivo, eliminaObiettivo } = useFinanceStore();
 
   const t = useTema();

@@ -1,4 +1,4 @@
-// ── Schermata Categorie + Conti: CRUD per categorie e istituti bancari ──
+// ── Schermata Altro: impostazioni + CRUD categorie e conti/istituti ──
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
 import PressableScale from '../../components/PressableScale';
+import ImpostazioniSezione from '../../components/altro/ImpostazioniSezione';
 import { useTema, Tema } from '../../constants/tema';
 import { formatEuro } from '../../utils/formatters';
 
@@ -28,7 +29,7 @@ const TIPI: Array<{ key: TipoCategoria; label: string; colore: string }> = [
 
 type Sezione = 'categorie' | 'conti';
 
-export default function CategorieScreen() {
+export default function AltroScreen() {
   const {
     categorie, transazioni, aggiungiCategoria, rinominaCategoria, eliminaCategoria, aggiornaTipoCategoria,
     istituti, aggiungiIstituto, rinominaIstituto, eliminaIstituto,
@@ -120,6 +121,8 @@ export default function CategorieScreen() {
 
   return (
     <View style={stili.contenitore}>
+
+      <ImpostazioniSezione />
 
       {/* ── Toggle Categorie / Conti ── */}
       <View style={stili.toggleContenitore}>

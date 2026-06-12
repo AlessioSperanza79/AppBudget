@@ -12,11 +12,9 @@ type IoniconName = ComponentProps<typeof Ionicons>['name'];
 const SCHEDE: { nome: string; titolo: string; icona: IoniconName }[] = [
   { nome: 'riepilogo',      titolo: 'Riepilogo',   icona: 'wallet-outline' },
   { nome: 'index',          titolo: 'Movimenti',   icona: 'list-outline' },
-  { nome: 'grafici',        titolo: 'Grafici',     icona: 'pie-chart-outline' },
   { nome: 'analisi',        titolo: 'Analisi',     icona: 'analytics-outline' },
   { nome: 'pianificazione', titolo: 'Pianifica',   icona: 'calendar-outline' },
-  { nome: 'obiettivi',      titolo: 'Obiettivi',   icona: 'flag-outline' },
-  { nome: 'categorie',      titolo: 'Categorie',   icona: 'pricetags-outline' },
+  { nome: 'altro',          titolo: 'Altro',       icona: 'ellipsis-horizontal-outline' },
 ];
 
 export default function TabLayout() {
