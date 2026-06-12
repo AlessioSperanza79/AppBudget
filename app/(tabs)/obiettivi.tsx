@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  Modal, StyleSheet,
+  Modal, StyleSheet, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -16,6 +16,9 @@ const PALETTE: string[] = [
   '#2563EB', '#15803D', '#F57F17', '#7C3AED',
   '#E53935', '#00838F', '#AD1457', '#6A1B9A',
 ];
+
+// Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
+const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 const dataScadenzaDefault = (): string => {
   const d = new Date();
@@ -130,10 +133,10 @@ export default function ObiettiviScreen() {
                     <Text style={stili.scadenza}>Scadenza: {formatData(item.dataScadenza)}</Text>
                   )}
                 </View>
-                <TouchableOpacity onPress={() => apriModificaObiettivo(item)} style={stili.btn} hitSlop={8}>
+                <TouchableOpacity onPress={() => apriModificaObiettivo(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica obiettivo')}>
                   <Ionicons name="pencil-outline" size={18} color={t.primario} />
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => setObDaEliminare(item)} style={stili.btn} hitSlop={8}>
+                <TouchableOpacity onPress={() => setObDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina obiettivo')}>
                   <Ionicons name="trash-outline" size={18} color={t.uscita} />
                 </TouchableOpacity>
               </View>

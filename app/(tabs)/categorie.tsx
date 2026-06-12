@@ -2,13 +2,16 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  Modal, StyleSheet,
+  Modal, StyleSheet, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
 import { useTema, Tema } from '../../constants/tema';
 import { formatEuro } from '../../utils/formatters';
+
+// Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
+const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 const PALETTE: string[] = [
   '#2E7D32', '#66BB6A', '#E53935', '#2563EB',
@@ -154,10 +157,10 @@ export default function CategorieScreen() {
                   <View style={[stili.badgeTipo, { backgroundColor: tipo.colore + '18' }]}>
                     <Text style={[stili.testoBadgeTipo, { color: tipo.colore }]}>{tipo.label}</Text>
                   </View>
-                  <TouchableOpacity onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8}>
+                  <TouchableOpacity onPress={() => apriModificaCategoria(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica categoria')}>
                     <Ionicons name="pencil-outline" size={18} color={t.primario} />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8}>
+                  <TouchableOpacity onPress={() => setCatDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina categoria')}>
                     <Ionicons name="trash-outline" size={18} color={t.uscita} />
                   </TouchableOpacity>
                 </View>
@@ -204,10 +207,10 @@ export default function CategorieScreen() {
                 <Ionicons name="business-outline" size={16} color="#FFF" />
               </View>
               <Text style={stili.nome}>{item.nome}</Text>
-              <TouchableOpacity onPress={() => apriModificaIstituto(item)} style={stili.btn} hitSlop={8}>
+              <TouchableOpacity onPress={() => apriModificaIstituto(item)} style={stili.btn} hitSlop={8} {...suggerimento('Modifica conto')}>
                 <Ionicons name="pencil-outline" size={18} color={t.primario} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setIstDaEliminare(item)} style={stili.btn} hitSlop={8}>
+              <TouchableOpacity onPress={() => setIstDaEliminare(item)} style={stili.btn} hitSlop={8} {...suggerimento('Elimina conto')}>
                 <Ionicons name="trash-outline" size={18} color={t.uscita} />
               </TouchableOpacity>
             </View>

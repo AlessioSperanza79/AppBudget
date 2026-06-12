@@ -1,7 +1,7 @@
 // ── Schermata Pianificazione: modelli ricorrenti e applicazione mensile ──
 import { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -11,6 +11,9 @@ import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
 import { useTema, Tema } from '../../constants/tema';
+
+// Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
+const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -174,6 +177,7 @@ export default function PianificazioneScreen() {
         style={stili.fab}
         onPress={() => { setTransazioneSelezionata(undefined); setModaleVisibile(true); }}
         activeOpacity={0.85}
+        {...suggerimento('Nuovo modello ricorrente')}
       >
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
