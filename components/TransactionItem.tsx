@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Transazione, Categoria, Istituto, TipologiaConto } from '../types';
 import { formatEuro, formatData } from '../utils/formatters';
@@ -9,6 +9,9 @@ const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = 
   conto_corrente: 'business-outline',
   carta_credito:  'card-outline',
 };
+
+// Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
+const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 interface Props {
   transazione: Transazione;
@@ -79,17 +82,17 @@ export default function TransactionItem({
         {mostraAzioni && (
           <View style={stili.azioni}>
             {onDuplica && (
-              <TouchableOpacity onPress={onDuplica} hitSlop={8} style={stili.btnAzione}>
+              <TouchableOpacity onPress={onDuplica} hitSlop={8} style={stili.btnAzione} {...suggerimento('Duplica transazione')}>
                 <Ionicons name="copy-outline" size={15} color={t.piuSottile} />
               </TouchableOpacity>
             )}
             {onModifica && (
-              <TouchableOpacity onPress={onModifica} hitSlop={8} style={stili.btnAzione}>
+              <TouchableOpacity onPress={onModifica} hitSlop={8} style={stili.btnAzione} {...suggerimento('Modifica transazione')}>
                 <Ionicons name="pencil-outline" size={15} color={t.piuSottile} />
               </TouchableOpacity>
             )}
             {onElimina && (
-              <TouchableOpacity onPress={onElimina} hitSlop={8} style={stili.btnAzione}>
+              <TouchableOpacity onPress={onElimina} hitSlop={8} style={stili.btnAzione} {...suggerimento('Elimina transazione')}>
                 <Ionicons name="trash-outline" size={15} color="#FDA4AF" />
               </TouchableOpacity>
             )}

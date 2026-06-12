@@ -1,6 +1,6 @@
 // ── Schermata principale: lista transazioni filtrata per periodo ──
 import { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Modal, StyleSheet, TextInput } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, Modal, StyleSheet, TextInput, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import TransactionItem from '../../components/TransactionItem';
@@ -18,6 +18,9 @@ const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
 ];
+
+// Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
+const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 export default function TransazioniScreen() {
   const { transazioni, categorie, istituti, aggiungiTransazione, modificaTransazione, eliminaTransazione } =
@@ -208,6 +211,7 @@ export default function TransazioniScreen() {
           <TouchableOpacity
             style={[stili.btnFiltri, numFiltriAttivi > 0 && stili.btnFiltriAttivo]}
             onPress={() => setModaleFiltri(true)}
+            {...suggerimento('Filtri avanzati')}
           >
             <Ionicons
               name="options-outline"
@@ -224,6 +228,7 @@ export default function TransazioniScreen() {
             style={stili.btnFiltri}
             onPress={gestisciExport}
             disabled={transazioniVisibili.length === 0}
+            {...suggerimento('Esporta CSV')}
           >
             <Ionicons
               name="download-outline"
@@ -263,7 +268,7 @@ export default function TransazioniScreen() {
       />
 
       {/* Pulsante flottante */}
-      <TouchableOpacity style={stili.fab} onPress={apriNuova} activeOpacity={0.85}>
+      <TouchableOpacity style={stili.fab} onPress={apriNuova} activeOpacity={0.85} {...suggerimento('Inserisci Entrata/Uscita')}>
         <Ionicons name="add" size={28} color="#FFF" />
       </TouchableOpacity>
 

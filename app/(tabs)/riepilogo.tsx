@@ -14,11 +14,12 @@ import {
   View,
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
+import TransactionForm from '../../components/TransactionForm';
 import TransactionItem from '../../components/TransactionItem';
 import { Tema, useTema } from '../../constants/tema';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
-import { Categoria } from '../../types';
+import { Categoria, Transazione } from '../../types';
 import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
 import { formatEuro, oggiIso } from '../../utils/formatters';
@@ -29,6 +30,9 @@ const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
 ];
+
+// Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
+const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 function RigaFlusso({
   etichetta, importo, reddito, colore,
@@ -58,7 +62,7 @@ function RigaFlusso({
 }
 
 export default function RiepilogoScreen() {
-  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi } = useFinanceStore();
+  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione } = useFinanceStore();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -81,6 +85,11 @@ export default function RiepilogoScreen() {
   const [dataCorrente, setDataCorrente] = useState(new Date());
   const [modaleReddito, setModaleReddito] = useState(false);
   const [redditoInput, setRedditoInput] = useState('');
+  const [modaleNuova, setModaleNuova] = useState(false);
+
+  const gestisciSalvaTransazione = (dati: Omit<Transazione, 'id'>) => {
+    aggiungiTransazione(dati);
+  };
 
   const naviga = (direzione: 1 | -1) => {
     setDataCorrente((prev) => {
@@ -253,10 +262,10 @@ export default function RiepilogoScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity onPress={gestisciBackup} style={stili.btnTema} hitSlop={8}>
+            <TouchableOpacity onPress={gestisciBackup} style={stili.btnTema} hitSlop={8} {...suggerimento('Esporta backup JSON')}>
               <Ionicons name="cloud-download-outline" size={20} color={t.sottile} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={ciclaTema} style={stili.btnTema} hitSlop={8}>
+            <TouchableOpacity onPress={ciclaTema} style={stili.btnTema} hitSlop={8} {...suggerimento('Cambia tema')}>
               <Ionicons name={iconaTema} size={20} color={t.sottile} />
             </TouchableOpacity>
           </View>
@@ -486,6 +495,24 @@ export default function RiepilogoScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* ── Pulsante flottante: nuova transazione ── */}
+      <TouchableOpacity
+        style={stili.fab}
+        onPress={() => setModaleNuova(true)}
+        activeOpacity={0.85}
+        {...suggerimento('Inserisci Entrata/Uscita')}
+      >
+        <Ionicons name="add" size={28} color="#FFF" />
+      </TouchableOpacity>
+
+      <TransactionForm
+        visibile={modaleNuova}
+        onChiudi={() => setModaleNuova(false)}
+        onSalva={gestisciSalvaTransazione}
+        categorie={categorie}
+        istituti={istituti}
+      />
     </View>
   );
 }
@@ -816,6 +843,24 @@ function creaStili(t: Tema) {
       margin: 40,
       lineHeight: 24,
       fontSize: 15,
+    },
+
+    // ── FAB ──
+    fab: {
+      position: 'absolute',
+      bottom: 24,
+      right: 20,
+      width: 56,
+      height: 56,
+      borderRadius: 28,
+      backgroundColor: t.primario,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: t.primario,
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.4,
+      shadowRadius: 10,
+      elevation: 8,
     },
 
     // ── Modal reddito ──
