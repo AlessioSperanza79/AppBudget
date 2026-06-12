@@ -10,7 +10,7 @@ import { useTema, Tema } from '../../constants/tema';
 import { Transazione, TipoTransazione, TipologiaConto } from '../../types';
 import { oggiIso } from '../../utils/formatters';
 import { generaCsvTransazioni } from '../../utils/csv';
-import { esportaCsv } from '../../utils/exportCsv';
+import { esportaFile } from '../../utils/exportFile';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -129,7 +129,7 @@ export default function TransazioniScreen() {
   const gestisciExport = () => {
     const csv = generaCsvTransazioni(transazioniVisibili, categorie, istituti);
     const nomeFile = `transazioni_${periodoLabel.replace(/\s+/g, '_').toLowerCase()}.csv`;
-    esportaCsv(nomeFile, csv);
+    esportaFile(nomeFile, csv, 'text/csv');
   };
 
   const gestisciDuplica = (tr: Transazione) => {

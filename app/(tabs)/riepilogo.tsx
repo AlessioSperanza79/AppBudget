@@ -19,7 +19,9 @@ import { Tema, useTema } from '../../constants/tema';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
 import { Categoria } from '../../types';
-import { formatEuro } from '../../utils/formatters';
+import { generaBackupJson } from '../../utils/backup';
+import { esportaFile } from '../../utils/exportFile';
+import { formatEuro, oggiIso } from '../../utils/formatters';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -68,6 +70,11 @@ export default function RiepilogoScreen() {
   const ciclaTema = () => {
     const ciclo: Record<PreferenzaTema, PreferenzaTema> = { sistema: 'chiaro', chiaro: 'scuro', scuro: 'sistema' };
     setTema(ciclo[prefTema]);
+  };
+
+  const gestisciBackup = () => {
+    const json = generaBackupJson(transazioni, categorie, istituti, reddito);
+    esportaFile(`backup_appbudget_${oggiIso()}.json`, json, 'application/json');
   };
 
   const [periodo, setPeriodo] = useState<Periodo>('mensile');
@@ -246,6 +253,9 @@ export default function RiepilogoScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+            <TouchableOpacity onPress={gestisciBackup} style={stili.btnTema} hitSlop={8}>
+              <Ionicons name="cloud-download-outline" size={20} color={t.sottile} />
+            </TouchableOpacity>
             <TouchableOpacity onPress={ciclaTema} style={stili.btnTema} hitSlop={8}>
               <Ionicons name={iconaTema} size={20} color={t.sottile} />
             </TouchableOpacity>
