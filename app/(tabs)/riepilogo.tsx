@@ -14,6 +14,8 @@ import {
   View,
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
+import FadeInView from '../../components/FadeInView';
+import PressableScale from '../../components/PressableScale';
 import TransactionForm from '../../components/TransactionForm';
 import TransactionItem from '../../components/TransactionItem';
 import { Tema, useTema } from '../../constants/tema';
@@ -228,8 +230,8 @@ export default function RiepilogoScreen() {
     : null;
 
   const coloriGradiente: [string, string] = saldo >= 0
-    ? ['#059669', '#047857']
-    : ['#DC2626', '#B91C1C'];
+    ? t.gradientePositivo
+    : t.gradienteNegativo;
 
   const apriModaleReddito = () => {
     setRedditoInput(reddito > 0 ? String(reddito) : '');
@@ -262,69 +264,75 @@ export default function RiepilogoScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <TouchableOpacity onPress={gestisciBackup} style={stili.btnTema} hitSlop={8} {...suggerimento('Esporta backup JSON')}>
+            <PressableScale onPress={gestisciBackup} style={stili.btnTema} hitSlop={8} {...suggerimento('Esporta backup JSON')}>
               <Ionicons name="cloud-download-outline" size={20} color={t.sottile} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={ciclaTema} style={stili.btnTema} hitSlop={8} {...suggerimento('Cambia tema')}>
+            </PressableScale>
+            <PressableScale onPress={ciclaTema} style={stili.btnTema} hitSlop={8} {...suggerimento('Cambia tema')}>
               <Ionicons name={iconaTema} size={20} color={t.sottile} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           <View style={stili.navigatore}>
-            <TouchableOpacity onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
+            <PressableScale onPress={() => naviga(-1)} hitSlop={10} style={stili.btnNav}>
               <Ionicons name="chevron-back" size={18} color={t.sottile} />
-            </TouchableOpacity>
+            </PressableScale>
             <Text style={stili.labelPeriodo}>{periodoLabel}</Text>
-            <TouchableOpacity onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
+            <PressableScale onPress={() => naviga(1)} hitSlop={10} style={stili.btnNav}>
               <Ionicons name="chevron-forward" size={18} color={t.sottile} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         </View>
 
         {/* ── Card saldo con gradiente ── */}
-        <LinearGradient
-          colors={coloriGradiente}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={stili.cardSaldo}
-        >
-          <Text style={stili.etichettaSaldo}>
-            {periodo === 'mensile' ? 'Saldo del mese' : "Saldo dell'anno"}
-          </Text>
-          <Text style={stili.valoreSaldo}>
-            {saldo >= 0 ? '+' : ''}{formatEuro(saldo)}
-          </Text>
-          <View style={stili.rigaStat}>
-            <View style={stili.stat}>
-              <View style={stili.rigaStatIcon}>
-                <Ionicons name="arrow-up-circle-outline" size={14} color="#86efac" />
-                <Text style={[stili.labelStat, { color: '#86efac' }]}>Entrate</Text>
+        <FadeInView ritardo={0}>
+          <LinearGradient
+            colors={coloriGradiente}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={stili.cardSaldo}
+          >
+            {/* Cerchi decorativi in vetro per dare profondità senza librerie native extra */}
+            <View style={stili.cerchioDecorativoGrande} />
+            <View style={stili.cerchioDecorativoPiccolo} />
+
+            <Text style={stili.etichettaSaldo}>
+              {periodo === 'mensile' ? 'Saldo del mese' : "Saldo dell'anno"}
+            </Text>
+            <Text style={stili.valoreSaldo}>
+              {saldo >= 0 ? '+' : ''}{formatEuro(saldo)}
+            </Text>
+            <View style={stili.rigaStat}>
+              <View style={stili.stat}>
+                <View style={stili.rigaStatIcon}>
+                  <Ionicons name="arrow-up-circle-outline" size={14} color="#A7F3D0" />
+                  <Text style={[stili.labelStat, { color: '#A7F3D0' }]}>Entrate</Text>
+                </View>
+                <Text style={[stili.valoreStat, { color: '#A7F3D0' }]}>{formatEuro(totaleEntrate)}</Text>
               </View>
-              <Text style={[stili.valoreStat, { color: '#86efac' }]}>{formatEuro(totaleEntrate)}</Text>
-            </View>
-            <View style={stili.separatoreStat} />
-            <View style={stili.stat}>
-              <View style={stili.rigaStatIcon}>
-                <Ionicons name="arrow-down-circle-outline" size={14} color="#fca5a5" />
-                <Text style={[stili.labelStat, { color: '#fca5a5' }]}>Uscite</Text>
+              <View style={stili.separatoreStat} />
+              <View style={stili.stat}>
+                <View style={stili.rigaStatIcon}>
+                  <Ionicons name="arrow-down-circle-outline" size={14} color="#FECDD3" />
+                  <Text style={[stili.labelStat, { color: '#FECDD3' }]}>Uscite</Text>
+                </View>
+                <Text style={[stili.valoreStat, { color: '#FECDD3' }]}>{formatEuro(totaleUscite)}</Text>
               </View>
-              <Text style={[stili.valoreStat, { color: '#fca5a5' }]}>{formatEuro(totaleUscite)}</Text>
             </View>
-          </View>
-        </LinearGradient>
+          </LinearGradient>
+        </FadeInView>
 
         {/* ── Cruscotto flusso ── */}
-        <View style={stili.cruscotto}>
+        <FadeInView ritardo={80} style={stili.cruscotto}>
           <View style={stili.intestazioneCruscotto}>
             <Text style={stili.titoloCruscotto}>
               {periodo === 'mensile' ? 'Flusso mensile' : 'Flusso annuale'}
             </Text>
-            <TouchableOpacity style={stili.btnEditReddito} onPress={apriModaleReddito}>
+            <PressableScale style={stili.btnEditReddito} onPress={apriModaleReddito}>
               <Ionicons name="pencil-outline" size={12} color={t.sottile} />
               <Text style={stili.testoEditReddito}>
                 {reddito > 0 ? formatEuro(redditoRiferimento) : 'Imposta reddito'}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {reddito > 0 ? (
@@ -340,7 +348,7 @@ export default function RiepilogoScreen() {
               )}
               <View style={stili.separatoreCruscotto} />
               <View style={stili.rigaAvanzo}>
-                <View style={[stili.cerchioAvanzo, { backgroundColor: avanzo >= 0 ? t.entrataSfondo : t.uscitaSfondo }]}>
+                <View style={[stili.cerchio, { backgroundColor: avanzo >= 0 ? t.entrataSfondo : t.uscitaSfondo }]}>
                   <Ionicons
                     name={avanzo >= 0 ? 'checkmark' : 'alert'}
                     size={14}
@@ -369,11 +377,11 @@ export default function RiepilogoScreen() {
               <Ionicons name="chevron-forward" size={16} color={t.primario} />
             </TouchableOpacity>
           )}
-        </View>
+        </FadeInView>
 
         {/* ── Sparkline saldo ultimi 6 mesi ── */}
         {ultimi6MesiSaldi.some((d) => d.value !== 0) && (
-          <View style={stili.sezioneSparkline}>
+          <FadeInView ritardo={160} style={stili.sezioneSparkline}>
             <Text style={stili.titoloSparkline}>Trend saldo — ultimi 6 mesi</Text>
             <LineChart
               data={ultimi6MesiSaldi}
@@ -396,12 +404,12 @@ export default function RiepilogoScreen() {
               rulesType="solid"
               disableScroll
             />
-          </View>
+          </FadeInView>
         )}
 
         {/* ── Statistiche avanzate ── */}
         {totaleUscite > 0 && (
-          <View style={stili.sezioneStatistiche}>
+          <FadeInView ritardo={240} style={stili.sezioneStatistiche}>
             <Text style={stili.titoloSparkline}>Statistiche</Text>
 
             <View style={stili.rigaStatistica}>
@@ -438,7 +446,7 @@ export default function RiepilogoScreen() {
                 ))}
               </>
             )}
-          </View>
+          </FadeInView>
         )}
 
         {/* ── Lista transazioni del periodo ── */}
@@ -469,7 +477,7 @@ export default function RiepilogoScreen() {
           <View style={stili.cardModal}>
             <Text style={stili.titoloModal}>Reddito mensile netto</Text>
             <Text style={stili.sottotitoloModal}>
-              Inserisci il tuo stipendio netto. Viene usato per calcolare l' nel cruscotto flusso.
+              Inserisci il tuo stipendio netto. Viene usato per calcolare l&apos;avanzo nel cruscotto flusso.
             </Text>
             <View style={stili.rigaInputReddito}>
               <Text style={stili.euroSign}>€</Text>
@@ -497,14 +505,13 @@ export default function RiepilogoScreen() {
       </Modal>
 
       {/* ── Pulsante flottante: nuova transazione ── */}
-      <TouchableOpacity
+      <PressableScale
         style={stili.fab}
         onPress={() => setModaleNuova(true)}
-        activeOpacity={0.85}
         {...suggerimento('Inserisci Entrata/Uscita')}
       >
         <Ionicons name="add" size={28} color="#FFF" />
-      </TouchableOpacity>
+      </PressableScale>
 
       <TransactionForm
         visibile={modaleNuova}
@@ -610,9 +617,33 @@ function creaStili(t: Tema) {
     cardSaldo: {
       margin: 16,
       marginTop: 12,
-      borderRadius: 24,
+      borderRadius: 28,
       padding: 24,
       gap: 4,
+      overflow: 'hidden',
+      shadowColor: t.primario,
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.25,
+      shadowRadius: 20,
+      elevation: 6,
+    },
+    cerchioDecorativoGrande: {
+      position: 'absolute',
+      top: -60,
+      right: -50,
+      width: 160,
+      height: 160,
+      borderRadius: 80,
+      backgroundColor: 'rgba(255,255,255,0.10)',
+    },
+    cerchioDecorativoPiccolo: {
+      position: 'absolute',
+      bottom: -30,
+      left: -20,
+      width: 90,
+      height: 90,
+      borderRadius: 45,
+      backgroundColor: 'rgba(255,255,255,0.08)',
     },
     etichettaSaldo: {
       color: 'rgba(255,255,255,0.75)',
@@ -623,7 +654,7 @@ function creaStili(t: Tema) {
     },
     valoreSaldo: {
       color: '#FFF',
-      fontSize: 42,
+      fontSize: 46,
       fontWeight: '800',
       letterSpacing: -1.5,
       marginTop: 4,
