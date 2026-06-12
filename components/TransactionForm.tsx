@@ -41,6 +41,7 @@ export default function TransactionForm({
   const [categoriaId, setCategoriaId] = useState('');
   const [data,        setData]        = useState(oggiIso());
   const [nota,        setNota]        = useState('');
+  const [tag,         setTag]         = useState('');
   const [tipologia,   setTipologia]   = useState<TipologiaConto | undefined>();
   const [istitutoId,  setIstitutoId]  = useState<string | undefined>();
   const [ricorrente,  setRicorrente]  = useState(false);
@@ -59,6 +60,7 @@ export default function TransactionForm({
       setCategoriaId(transazioneEsistente?.categoriaId ?? (categorie[0]?.id ?? ''));
       setData(transazioneEsistente?.data ?? oggiIso());
       setNota(transazioneEsistente?.nota ?? '');
+      setTag(transazioneEsistente?.tag ?? '');
       setTipologia(transazioneEsistente?.tipologia);
       setIstitutoId(transazioneEsistente?.istitutoId);
       setRicorrente(transazioneEsistente?.ricorrente ?? (forzaRicorrente ?? false));
@@ -79,6 +81,7 @@ export default function TransactionForm({
     onSalva({
       importo: importoNum, tipo, categoriaId, data,
       nota: nota.trim() || undefined,
+      tag: tag.trim() || undefined,
       tipologia,
       istitutoId,
       ricorrente: ricorrente || undefined,
@@ -244,6 +247,17 @@ export default function TransactionForm({
             placeholder="Es. pranzo di lavoro..."
             placeholderTextColor={t.segnaposto}
             multiline
+          />
+
+          {/* ── Tag ── */}
+          <Text style={stili.etichetta}>Tag (facoltativo)</Text>
+          <TextInput
+            style={stili.input}
+            value={tag}
+            onChangeText={setTag}
+            placeholder="Es. Vacanze, Lavoro..."
+            placeholderTextColor={t.segnaposto}
+            autoCapitalize="none"
           />
 
           {/* ── Ricorrente ── */}

@@ -63,6 +63,12 @@ export default function TransactionItem({
         {transazione.nota ? (
           <Text style={stili.nota} numberOfLines={1}>{transazione.nota}</Text>
         ) : null}
+
+        {transazione.tag ? (
+          <View style={stili.chipTag}>
+            <Text style={stili.testoTag} numberOfLines={1}>{transazione.tag}</Text>
+          </View>
+        ) : null}
       </View>
 
       {/* Importo + pulsanti azione */}
@@ -160,6 +166,19 @@ function creaStili(t: Tema) {
       fontSize: 11,
       color: t.sottile,
       fontStyle: 'italic',
+    },
+    chipTag: {
+      alignSelf: 'flex-start',
+      backgroundColor: t.superfice,
+      borderRadius: 6,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      marginTop: 1,
+    },
+    testoTag: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: t.piuSottile,
     },
     azioni: {
       flexDirection: 'row',

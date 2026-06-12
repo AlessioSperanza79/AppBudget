@@ -2,7 +2,7 @@
 import { Categoria, Istituto, Transazione } from '../types';
 import { formatData } from './formatters';
 
-const INTESTAZIONI = ['Data', 'Tipo', 'Categoria', 'Importo', 'Nota', 'Conto', 'Tipologia'];
+const INTESTAZIONI = ['Data', 'Tipo', 'Categoria', 'Importo', 'Nota', 'Tag', 'Conto', 'Tipologia'];
 
 // Racchiude il campo tra virgolette se contiene virgole, virgolette o a capo
 const escapeCampo = (valore: string): string => {
@@ -33,6 +33,7 @@ export const generaCsvTransazioni = (
       categoria?.nome ?? '',
       importo.toFixed(2).replace('.', ','),
       tr.nota ?? '',
+      tr.tag ?? '',
       istituto?.nome ?? '',
       tr.tipologia ? TIPOLOGIE_LABEL[tr.tipologia] ?? '' : '',
     ].map(escapeCampo).join(';');

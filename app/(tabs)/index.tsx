@@ -38,15 +38,25 @@ export default function TransazioniScreen() {
   const [filtroTipo, setFiltroTipo] = useState<TipoTransazione | null>(null);
   const [filtroIstitutoId, setFiltroIstitutoId] = useState<string | null>(null);
   const [filtroTipologia, setFiltroTipologia] = useState<TipologiaConto | null>(null);
+  const [filtroTag, setFiltroTag] = useState<string | null>(null);
 
   const numFiltriAttivi =
-    (filtroTipo ? 1 : 0) + (filtroIstitutoId ? 1 : 0) + (filtroTipologia ? 1 : 0);
+    (filtroTipo ? 1 : 0) + (filtroIstitutoId ? 1 : 0) + (filtroTipologia ? 1 : 0) + (filtroTag ? 1 : 0);
 
   const azzeraFiltri = () => {
     setFiltroTipo(null);
     setFiltroIstitutoId(null);
     setFiltroTipologia(null);
+    setFiltroTag(null);
   };
+
+  const tagDisponibili = useMemo(() => {
+    const insieme = new Set<string>();
+    for (const tr of transazioni) {
+      if (tr.tag) insieme.add(tr.tag);
+    }
+    return Array.from(insieme).sort((a, b) => a.localeCompare(b));
+  }, [transazioni]);
 
   const naviga = (direzione: 1 | -1) => {
     setDataCorrente((prev) => {
@@ -92,6 +102,9 @@ export default function TransazioniScreen() {
     if (filtroTipologia) {
       risultato = risultato.filter((tr) => tr.tipologia === filtroTipologia);
     }
+    if (filtroTag) {
+      risultato = risultato.filter((tr) => tr.tag === filtroTag);
+    }
 
     if (cerca.trim()) {
       const q = cerca.trim().toLowerCase();
@@ -99,6 +112,7 @@ export default function TransazioniScreen() {
         const cat = categorie.find((c) => c.id === tr.categoriaId);
         return (
           tr.nota?.toLowerCase().includes(q) ||
+          tr.tag?.toLowerCase().includes(q) ||
           cat?.nome.toLowerCase().includes(q) ||
           String(tr.importo).includes(q)
         );
@@ -106,7 +120,7 @@ export default function TransazioniScreen() {
     }
 
     return risultato;
-  }, [transazioniOrdinate, cerca, categorie, filtroTipo, filtroIstitutoId, filtroTipologia]);
+  }, [transazioniOrdinate, cerca, categorie, filtroTipo, filtroIstitutoId, filtroTipologia, filtroTag]);
 
   const apriNuova = () => {
     setTransazioneSelezionata(undefined);
@@ -141,6 +155,7 @@ export default function TransazioniScreen() {
       ...(tr.nota       != null && { nota: tr.nota }),
       ...(tr.tipologia  != null && { tipologia: tr.tipologia }),
       ...(tr.istitutoId != null && { istitutoId: tr.istitutoId }),
+      ...(tr.tag        != null && { tag: tr.tag }),
     });
   };
 
@@ -348,6 +363,29 @@ export default function TransazioniScreen() {
                       onPress={() => setFiltroIstitutoId(ist.id)}
                     >
                       <Text style={[stili.testoChip, filtroIstitutoId === ist.id && stili.testoChipAttivo]}>{ist.nome}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {tagDisponibili.length > 0 && (
+              <>
+                <Text style={stili.etichettaFiltro}>Tag</Text>
+                <View style={stili.rigaChip}>
+                  <TouchableOpacity
+                    style={[stili.chip, filtroTag === null && stili.chipAttivo]}
+                    onPress={() => setFiltroTag(null)}
+                  >
+                    <Text style={[stili.testoChip, filtroTag === null && stili.testoChipAttivo]}>Tutti</Text>
+                  </TouchableOpacity>
+                  {tagDisponibili.map((tag) => (
+                    <TouchableOpacity
+                      key={tag}
+                      style={[stili.chip, filtroTag === tag && stili.chipAttivo]}
+                      onPress={() => setFiltroTag(tag)}
+                    >
+                      <Text style={[stili.testoChip, filtroTag === tag && stili.testoChipAttivo]}>{tag}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>

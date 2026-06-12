@@ -89,7 +89,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(budget_mensile != null && { budgetMensile: Number(budget_mensile) }),
       })),
       istituti:  istDb.map(({ id, nome }): Istituto => ({ id, nome })),
-      transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id }): Transazione => ({
+      transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id, tag }): Transazione => ({
         id,
         importo: Number(importo),
         tipo,
@@ -101,6 +101,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(ricorrente  === true && { ricorrente: true }),
         ...(data_fine   != null && { dataFine: data_fine }),
         ...(template_id != null && { templateId: template_id }),
+        ...(tag         != null && { tag }),
       })),
       reddito: Number(impostRis.data?.reddito_mensile ?? 0),
       caricamento: false,
@@ -145,6 +146,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       ricorrente: nuova.ricorrente ?? false,
       data_fine: nuova.dataFine ?? null,
       template_id: nuova.templateId ?? null,
+      tag: nuova.tag ?? null,
     });
     if (error) console.error('[Supabase] aggiungi transazione:', error.message, error.code);
   },
@@ -169,6 +171,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       ricorrente: true,
       data_fine: modello.dataFine ?? null,
       template_id: null,
+      tag: modello.tag ?? null,
     });
 
     if (!dati.dataFine) return;
@@ -194,6 +197,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(dati.nota      != null && { nota: dati.nota }),
         ...(dati.tipologia != null && { tipologia: dati.tipologia }),
         ...(dati.istitutoId!= null && { istitutoId: dati.istitutoId }),
+        ...(dati.tag       != null && { tag: dati.tag }),
         templateId,
       });
       cursore = new Date(cursore.getFullYear(), cursore.getMonth() + 1, 1);
@@ -213,6 +217,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
           ricorrente: false,
           data_fine: null,
           template_id: templateId,
+          tag: t.tag ?? null,
         })),
       );
     }
@@ -245,6 +250,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
     if (aggiornamenti.tipologia   !== undefined) dbUpdate.tipologia    = aggiornamenti.tipologia;
     if (aggiornamenti.istitutoId  !== undefined) dbUpdate.istituto_id  = aggiornamenti.istitutoId;
     if (aggiornamenti.ricorrente  !== undefined) dbUpdate.ricorrente   = aggiornamenti.ricorrente;
+    if (aggiornamenti.tag         !== undefined) dbUpdate.tag          = aggiornamenti.tag;
     await supabase.from('transazioni').update(dbUpdate).eq('id', id);
   },
 
@@ -309,6 +315,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         categoria_id: nuova.categoriaId, data: nuova.data,
         nota: nuova.nota ?? null, tipologia: nuova.tipologia ?? null,
         istituto_id: nuova.istitutoId ?? null, ricorrente: false,
+        tag: nuova.tag ?? null,
       });
     }
   },

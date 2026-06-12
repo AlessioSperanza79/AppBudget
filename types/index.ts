@@ -34,6 +34,7 @@ export interface Transazione {
   categoriaId: string;      // riferimento all'id di una Categoria
   data: string;             // formato ISO "YYYY-MM-DD", es. "2026-06-05"
   nota?: string;            // nota facoltativa
+  tag?: string;             // etichetta libera per raggruppare/filtrare (es. "Vacanze")
   tipologia?: TipologiaConto; // conto corrente o carta di credito (opzionale)
   istitutoId?: string;      // riferimento all'id di un Istituto (opzionale)
   ricorrente?: boolean;     // true = modello template in Pianificazione
