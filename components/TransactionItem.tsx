@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Transazione, Categoria, Istituto, TipologiaConto } from '../types';
 import { formatEuro, formatData } from '../utils/formatters';
 import { useTema, Tema } from '../constants/tema';
@@ -34,7 +35,7 @@ export default function TransactionItem({
   const coloreAvatar  = categoria?.colore ?? t.piuSottile;
   const lettAvatar    = (categoria?.nome ?? '?').charAt(0).toUpperCase();
 
-  return (
+  const contenuto = (
     <View style={stili.riga}>
 
       {/* Avatar cerchio con colore categoria e iniziale */}
@@ -79,7 +80,7 @@ export default function TransactionItem({
         <Text style={[stili.importo, { color: coloreImporto }]}>
           {isEntrata ? '+' : '−'}{formatEuro(transazione.importo)}
         </Text>
-        {mostraAzioni && (
+        {mostraAzioni && Platform.OS === 'web' && (
           <View style={stili.azioni}>
             {onDuplica && (
               <TouchableOpacity onPress={onDuplica} hitSlop={8} style={stili.btnAzione} {...suggerimento('Duplica transazione')}>
@@ -102,10 +103,68 @@ export default function TransactionItem({
 
     </View>
   );
+
+  // Su web il gesto di swipe non è naturale: si mantengono i pulsanti azione visibili
+  if (!mostraAzioni || Platform.OS === 'web') return contenuto;
+
+  return (
+    <Swipeable
+      friction={2}
+      rightThreshold={40}
+      containerStyle={stili.involucroSwipe}
+      renderRightActions={(_progress, _translation, swipeable) => (
+        <AzioniSwipe t={t} swipeable={swipeable} onDuplica={onDuplica} onModifica={onModifica} onElimina={onElimina} />
+      )}
+    >
+      {contenuto}
+    </Swipeable>
+  );
+}
+
+// Pannello di azioni rivelato dallo swipe verso sinistra (solo native)
+function AzioniSwipe({
+  t, swipeable, onDuplica, onModifica, onElimina,
+}: {
+  t: Tema;
+  swipeable: SwipeableMethods;
+  onDuplica?: () => void;
+  onModifica?: () => void;
+  onElimina?: () => void;
+}) {
+  const stili = useMemo(() => creaStili(t), [t]);
+
+  const esegui = (azione?: () => void) => () => {
+    swipeable.close();
+    azione?.();
+  };
+
+  return (
+    <View style={stili.azioniSwipe}>
+      {onDuplica && (
+        <TouchableOpacity style={[stili.btnSwipe, { backgroundColor: t.violaSfondo }]} onPress={esegui(onDuplica)}>
+          <Ionicons name="copy-outline" size={20} color={t.viola} />
+        </TouchableOpacity>
+      )}
+      {onModifica && (
+        <TouchableOpacity style={[stili.btnSwipe, { backgroundColor: t.primarioSfondo }]} onPress={esegui(onModifica)}>
+          <Ionicons name="pencil-outline" size={20} color={t.primario} />
+        </TouchableOpacity>
+      )}
+      {onElimina && (
+        <TouchableOpacity style={[stili.btnSwipe, stili.btnSwipeUltimo, { backgroundColor: t.uscitaSfondo }]} onPress={esegui(onElimina)}>
+          <Ionicons name="trash-outline" size={20} color={t.uscita} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 }
 
 function creaStili(t: Tema) {
   return StyleSheet.create({
+    involucroSwipe: {
+      marginHorizontal: 16,
+      marginVertical: 4,
+    },
     riga: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -189,6 +248,25 @@ function creaStili(t: Tema) {
     },
     btnAzione: {
       padding: 4,
+    },
+
+    // ── Azioni swipe (native) ──
+    azioniSwipe: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'stretch',
+      marginVertical: 4,
+      gap: 6,
+      paddingLeft: 6,
+    },
+    btnSwipe: {
+      width: 52,
+      borderRadius: 16,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    btnSwipeUltimo: {
+      marginRight: 16,
     },
   });
 }
