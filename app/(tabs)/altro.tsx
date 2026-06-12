@@ -22,6 +22,9 @@ const PALETTE: string[] = [
   '#2E7D32', '#66BB6A', '#E53935', '#2563EB',
   '#F57F17', '#6A1B9A', '#00838F', '#AD1457',
   '#BF360C', '#78909C', '#FF7043', '#0288D1',
+  '#43A047', '#C0CA33', '#FFB300', '#8D6E63',
+  '#5E35B1', '#00ACC1', '#D81B60', '#3949AB',
+  '#7CB342', '#FB8C00', '#546E7A', '#26A69A',
 ];
 
 const TIPI: Array<{ key: TipoCategoria; label: string; colore: string }> = [
