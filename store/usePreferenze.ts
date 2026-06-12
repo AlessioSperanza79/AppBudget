@@ -7,6 +7,8 @@ export type PreferenzaTema = 'sistema' | 'chiaro' | 'scuro';
 interface PreferenzeState {
   tema: PreferenzaTema;
   setTema: (t: PreferenzaTema) => void;
+  tourCompletato: boolean;
+  setTourCompletato: (v: boolean) => void;
 }
 
 export const usePreferenze = create<PreferenzeState>()(
@@ -14,6 +16,8 @@ export const usePreferenze = create<PreferenzeState>()(
     (set) => ({
       tema: 'sistema',
       setTema: (tema) => set({ tema }),
+      tourCompletato: false,
+      setTourCompletato: (tourCompletato) => set({ tourCompletato }),
     }),
     {
       name: 'preferenze-app',

@@ -4,6 +4,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatEuro } from '../../utils/formatters';
+import CountUpText from '../../components/CountUpText';
 import EmptyState from '../../components/EmptyState';
 import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
@@ -126,16 +127,12 @@ export default function AnalisiScreen() {
         <View style={[stili.card, { backgroundColor: t.entrataSfondo }]}>
           <Ionicons name="arrow-up-circle-outline" size={16} color={t.entrata} />
           <Text style={[stili.etichettaCard, { color: t.entrata }]}>Entrate</Text>
-          <Text style={[stili.valoreCard, { color: t.entrata }]} numberOfLines={1}>
-            {formatEuro(totaleEntrate)}
-          </Text>
+          <CountUpText valore={totaleEntrate} formatta={formatEuro} style={[stili.valoreCard, { color: t.entrata }]} numberOfLines={1} />
         </View>
         <View style={[stili.card, { backgroundColor: t.uscitaSfondo }]}>
           <Ionicons name="arrow-down-circle-outline" size={16} color={t.uscita} />
           <Text style={[stili.etichettaCard, { color: t.uscita }]}>Uscite</Text>
-          <Text style={[stili.valoreCard, { color: t.uscita }]} numberOfLines={1}>
-            {formatEuro(totaleUscite)}
-          </Text>
+          <CountUpText valore={totaleUscite} formatta={formatEuro} style={[stili.valoreCard, { color: t.uscita }]} numberOfLines={1} />
         </View>
         <View style={[stili.card, { backgroundColor: saldo >= 0 ? t.primarioSfondo : t.arancioSfondo }]}>
           <Ionicons
@@ -144,9 +141,7 @@ export default function AnalisiScreen() {
             color={saldo >= 0 ? t.primario : t.arancio}
           />
           <Text style={[stili.etichettaCard, { color: saldo >= 0 ? t.primario : t.arancio }]}>Saldo</Text>
-          <Text style={[stili.valoreCard, { color: saldo >= 0 ? t.primario : t.arancio }]} numberOfLines={1}>
-            {formatEuro(saldo)}
-          </Text>
+          <CountUpText valore={saldo} formatta={formatEuro} style={[stili.valoreCard, { color: saldo >= 0 ? t.primario : t.arancio }]} numberOfLines={1} />
         </View>
       </FadeInView>
 

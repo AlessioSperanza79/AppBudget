@@ -9,6 +9,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Istituto, TipoCategoria } from '../../types';
 import PressableScale from '../../components/PressableScale';
 import ImpostazioniSezione from '../../components/altro/ImpostazioniSezione';
+import TourIntroduttivo from '../../components/onboarding/TourIntroduttivo';
 import { useTema, Tema } from '../../constants/tema';
 import { formatEuro } from '../../utils/formatters';
 
@@ -52,6 +53,8 @@ export default function AltroScreen() {
 
   const [catDaEliminare, setCatDaEliminare]           = useState<Categoria | undefined>();
   const [istDaEliminare, setIstDaEliminare]           = useState<Istituto | undefined>();
+
+  const [tourVisibile, setTourVisibile]               = useState(false);
 
   // Spesa del mese corrente per categoria, usata per la barra di avanzamento del budget
   const speseMeseCorrente = useMemo(() => {
@@ -123,6 +126,18 @@ export default function AltroScreen() {
     <View style={stili.contenitore}>
 
       <ImpostazioniSezione />
+
+      {/* ── Card Aiuto: rilancia il tour introduttivo ── */}
+      <PressableScale style={stili.cardAiuto} onPress={() => setTourVisibile(true)}>
+        <View style={stili.cerchioAiuto}>
+          <Ionicons name="help-circle-outline" size={22} color={t.primario} />
+        </View>
+        <View style={stili.testiAiuto}>
+          <Text style={stili.titoloAiuto}>Aiuto</Text>
+          <Text style={stili.sottotitoloAiuto}>Rivedi il tour introduttivo dell'app</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={t.piuSottile} />
+      </PressableScale>
 
       {/* ── Toggle Categorie / Conti ── */}
       <View style={stili.toggleContenitore}>
@@ -414,6 +429,8 @@ export default function AltroScreen() {
         );
       })()}
 
+      <TourIntroduttivo visibile={tourVisibile} onChiudi={() => setTourVisibile(false)} />
+
     </View>
   );
 }
@@ -423,6 +440,44 @@ function creaStili(t: Tema) {
     contenitore: {
       flex: 1,
       backgroundColor: t.sfondo,
+    },
+
+    // ── Card Aiuto ──
+    cardAiuto: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginBottom: 4,
+      borderRadius: 16,
+      padding: 14,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.05,
+      shadowRadius: 6,
+      elevation: 1,
+    },
+    cerchioAiuto: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: t.primarioSfondo,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    testiAiuto: {
+      flex: 1,
+    },
+    titoloAiuto: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: t.titolo,
+    },
+    sottotitoloAiuto: {
+      fontSize: 12,
+      color: t.sottile,
+      marginTop: 2,
     },
 
     // ── Toggle ──

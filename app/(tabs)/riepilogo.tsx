@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
+import CountUpText from '../../components/CountUpText';
 import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import TransactionForm from '../../components/TransactionForm';
@@ -298,16 +299,18 @@ export default function RiepilogoScreen() {
             <Text style={stili.etichettaSaldo}>
               {periodo === 'mensile' ? 'Saldo del mese' : "Saldo dell'anno"}
             </Text>
-            <Text style={stili.valoreSaldo}>
-              {saldo >= 0 ? '+' : ''}{formatEuro(saldo)}
-            </Text>
+            <CountUpText
+              valore={saldo}
+              formatta={(n) => `${n >= 0 ? '+' : ''}${formatEuro(n)}`}
+              style={stili.valoreSaldo}
+            />
             <View style={stili.rigaStat}>
               <View style={stili.stat}>
                 <View style={stili.rigaStatIcon}>
                   <Ionicons name="arrow-up-circle-outline" size={14} color="#A7F3D0" />
                   <Text style={[stili.labelStat, { color: '#A7F3D0' }]}>Entrate</Text>
                 </View>
-                <Text style={[stili.valoreStat, { color: '#A7F3D0' }]}>{formatEuro(totaleEntrate)}</Text>
+                <CountUpText valore={totaleEntrate} formatta={formatEuro} style={[stili.valoreStat, { color: '#A7F3D0' }]} />
               </View>
               <View style={stili.separatoreStat} />
               <View style={stili.stat}>
@@ -315,7 +318,7 @@ export default function RiepilogoScreen() {
                   <Ionicons name="arrow-down-circle-outline" size={14} color="#FECDD3" />
                   <Text style={[stili.labelStat, { color: '#FECDD3' }]}>Uscite</Text>
                 </View>
-                <Text style={[stili.valoreStat, { color: '#FECDD3' }]}>{formatEuro(totaleUscite)}</Text>
+                <CountUpText valore={totaleUscite} formatta={formatEuro} style={[stili.valoreStat, { color: '#FECDD3' }]} />
               </View>
             </View>
           </LinearGradient>
@@ -358,9 +361,11 @@ export default function RiepilogoScreen() {
                 <Text style={stili.etichettaAvanzo}>
                   {periodo === 'mensile' ? 'Avanzo' : 'Avanzo annuale'}
                 </Text>
-                <Text style={[stili.valoreAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}>
-                  {avanzo >= 0 ? '+' : ''}{formatEuro(avanzo)}
-                </Text>
+                <CountUpText
+                  valore={avanzo}
+                  formatta={(n) => `${n >= 0 ? '+' : ''}${formatEuro(n)}`}
+                  style={[stili.valoreAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}
+                />
                 <Text style={[stili.percAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}>
                   {redditoRiferimento > 0 ? `${Math.round(Math.abs(avanzo / redditoRiferimento) * 100)}%` : ''}
                 </Text>
@@ -414,7 +419,7 @@ export default function RiepilogoScreen() {
 
             <View style={stili.rigaStatistica}>
               <Text style={stili.etichettaStatistica}>Media spesa giornaliera</Text>
-              <Text style={stili.valoreStatistica}>{formatEuro(mediaGiornaliera)}</Text>
+              <CountUpText valore={mediaGiornaliera} formatta={formatEuro} style={stili.valoreStatistica} />
             </View>
 
             {differenzaMediaPerc != null && (
