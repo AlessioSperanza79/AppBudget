@@ -26,6 +26,7 @@ import { Categoria, Transazione } from '../../types';
 import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
 import { formatEuro, oggiIso } from '../../utils/formatters';
+import { classificaAvanzo } from '../../utils/livelloRisparmio';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -155,6 +156,8 @@ export default function RiepilogoScreen() {
 
   const redditoRiferimento = periodo === 'annuale' ? reddito * 12 : reddito;
   const avanzo = redditoRiferimento - totaleInvestimenti - totaleFisse - totaleVariabili;
+  const percAvanzoSuReddito = redditoRiferimento > 0 ? (avanzo / redditoRiferimento) * 100 : 0;
+  const livelloRisparmio = classificaAvanzo(percAvanzoSuReddito, t);
 
   const ultimi6MesiSaldi = useMemo(() =>
     Array.from({ length: 6 }, (_, i) => {
@@ -377,24 +380,29 @@ export default function RiepilogoScreen() {
               )}
               <View style={stili.separatoreCruscotto} />
               <View style={stili.rigaAvanzo}>
-                <View style={[stili.cerchio, { backgroundColor: avanzo >= 0 ? t.entrataSfondo : t.uscitaSfondo }]}>
-                  <Ionicons
-                    name={avanzo >= 0 ? 'checkmark' : 'alert'}
-                    size={14}
-                    color={avanzo >= 0 ? t.entrata : t.uscita}
-                  />
+                <View style={[stili.cerchio, { backgroundColor: livelloRisparmio.coloreSfondo }]}>
+                  <Ionicons name={livelloRisparmio.icona} size={14} color={livelloRisparmio.colore} />
                 </View>
-                <Text style={stili.etichettaAvanzo}>
-                  {periodo === 'mensile' ? 'Avanzo' : 'Avanzo annuale'}
-                </Text>
-                <CountUpText
-                  valore={avanzo}
-                  formatta={(n) => `${n >= 0 ? '+' : ''}${formatEuro(n)}`}
-                  style={[stili.valoreAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}
-                />
-                <Text style={[stili.percAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}>
-                  {redditoRiferimento > 0 ? `${Math.round(Math.abs(avanzo / redditoRiferimento) * 100)}%` : ''}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={stili.etichettaAvanzo}>
+                    {periodo === 'mensile' ? 'Avanzo' : 'Avanzo annuale'}
+                  </Text>
+                  <View style={[stili.badgeLivello, { backgroundColor: livelloRisparmio.coloreSfondo }]}>
+                    <Text style={[stili.testoBadgeLivello, { color: livelloRisparmio.colore }]}>
+                      {livelloRisparmio.etichetta}
+                    </Text>
+                  </View>
+                </View>
+                <View style={stili.colonnaValoreAvanzo}>
+                  <CountUpText
+                    valore={avanzo}
+                    formatta={(n) => `${n >= 0 ? '+' : ''}${formatEuro(n)}`}
+                    style={[stili.valoreAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}
+                  />
+                  <Text style={[stili.percAvanzo, { color: avanzo >= 0 ? t.entrata : t.uscita }]}>
+                    {redditoRiferimento > 0 ? `${Math.round(Math.abs(avanzo / redditoRiferimento) * 100)}%` : ''}
+                  </Text>
+                </View>
               </View>
             </>
           ) : (
@@ -794,10 +802,23 @@ function creaStili(t: Tema) {
       gap: 8,
     },
     etichettaAvanzo: {
-      flex: 1,
       fontSize: 13,
       color: t.titolo,
       fontWeight: '600',
+    },
+    badgeLivello: {
+      alignSelf: 'flex-start',
+      marginTop: 3,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: 8,
+    },
+    testoBadgeLivello: {
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    colonnaValoreAvanzo: {
+      alignItems: 'flex-end',
     },
     valoreAvanzo: {
       fontSize: 14,
@@ -805,9 +826,9 @@ function creaStili(t: Tema) {
     },
     percAvanzo: {
       fontSize: 12,
-      width: 36,
       textAlign: 'right',
       fontWeight: '600',
+      marginTop: 2,
     },
     promptReddito: {
       flexDirection: 'row',
