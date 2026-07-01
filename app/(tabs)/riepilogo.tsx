@@ -385,7 +385,7 @@ export default function RiepilogoScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={stili.etichettaAvanzo}>
-                    {periodo === 'mensile' ? 'Avanzo' : 'Avanzo annuale'}
+                    {periodo === 'mensile' ? 'Risparmio' : 'Risparmio annuale'}
                   </Text>
                   <View style={[stili.badgeLivello, { backgroundColor: livelloRisparmio.coloreSfondo }]}>
                     <Text style={[stili.testoBadgeLivello, { color: livelloRisparmio.colore }]}>
@@ -515,7 +515,7 @@ export default function RiepilogoScreen() {
         <View style={stili.corpoModal}>
           <Text style={stili.titoloModal}>Reddito mensile netto</Text>
           <Text style={stili.sottotitoloModal}>
-            Inserisci il tuo stipendio netto. Viene usato per calcolare l&apos;avanzo nel cruscotto flusso.
+            Inserisci il tuo stipendio netto. Viene usato per calcolare il risparmio nel cruscotto flusso.
           </Text>
           <View style={stili.rigaInputReddito}>
             <Text style={stili.euroSign}>€</Text>
