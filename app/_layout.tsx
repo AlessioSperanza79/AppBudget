@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { AppState } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -13,6 +13,7 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useFinanceStore } from '@/store/useFinanceStore';
 import { usePreferenze } from '@/store/usePreferenze';
 import { useSicurezza } from '@/store/useSicurezza';
+import { segnaSessioneSbloccata, sessioneGiaSbloccata } from '@/utils/sessioneWeb';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -71,14 +72,20 @@ function RootLayoutNav() {
 
   useEffect(() => {
     // Stabilisce lo stato di blocco iniziale solo dopo l'idratazione (il valore vero
-    // arriva qui appena pronto, mentre lo splash nasconde eventuali frame intermedi)
-    const applica = () => setBloccato(!!useSicurezza.getState().pinHash);
+    // arriva qui appena pronto, mentre lo splash nasconde eventuali frame intermedi).
+    // Sul web, se lo sblocco era già avvenuto in questa scheda del browser, non richiede
+    // di nuovo il PIN: un refresh è un'azione frequente e involontaria, non un riavvio
+    // deliberato come su mobile (dove il blocco a ogni avvio a freddo resta corretto)
+    const applica = () => setBloccato(!!useSicurezza.getState().pinHash && !sessioneGiaSbloccata());
     if (useSicurezza.persist.hasHydrated()) applica();
     return useSicurezza.persist.onFinishHydration(applica);
   }, []);
 
   useEffect(() => {
-    // Ri-blocca quando l'app torna in background/inattiva (es. cambio app, tab nascosta)
+    // Ri-blocca quando l'app torna in background/inattiva (es. cambio app). Solo su native:
+    // sul web lo stesso evento scatta anche solo cambiando scheda del browser, troppo spesso
+    // per giustificare una nuova richiesta di PIN nella stessa sessione della pagina
+    if (Platform.OS === 'web') return;
     const sub = AppState.addEventListener('change', (stato) => {
       if ((stato === 'background' || stato === 'inactive') && pinHash) setBloccato(true);
     });
@@ -93,7 +100,7 @@ function RootLayoutNav() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
         <TourIntroduttivo visibile={mostraTour} onChiudi={() => setMostraTour(false)} />
-        <AppLock bloccato={bloccato} onSbloccato={() => setBloccato(false)} />
+        <AppLock bloccato={bloccato} onSbloccato={() => { setBloccato(false); segnaSessioneSbloccata(); }} />
         <NotificheManager />
       </ThemeProvider>
     </GestureHandlerRootView>
