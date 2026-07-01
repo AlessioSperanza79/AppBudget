@@ -1,4 +1,15 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(gh --version)",
+      "Bash(ls ~/.ssh/*.pub 2>/dev/null && echo \"SSH keys found\" || echo \"no SSH keys\")",
+      "Read(//Users/alessiosperanza/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git config *)",
+      "Bash(git commit --allow-empty -m ' *)"
+    ]
+  },
   "enabledPlugins": {
     "expo@claude-plugins-official": true
   }
