@@ -7,6 +7,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Transazione, Categoria, Istituto, TipoTransazione, TipologiaConto } from '../types';
 import { oggiIso } from '../utils/formatters';
+import { iconaCategoria } from '../utils/iconeCategorie';
 import SelectorData from './SelectorData';
 import BottomSheet from './BottomSheet';
 import { useTema, Tema } from '../constants/tema';
@@ -157,12 +158,9 @@ export default function TransactionForm({
 
           {/* ── Categoria ── */}
           <Text style={stili.etichetta}>Categoria</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{ marginHorizontal: -20 }}
-            contentContainerStyle={{ paddingHorizontal: 20 }}
-          >
+          {/* A capo invece di scorrimento orizzontale: con molte categorie lo scroll orizzontale
+              non è scopribile (soprattutto col mouse sul web) e alcune finivano irraggiungibili */}
+          <View style={stili.righeCategoria}>
             {categorie.map((cat) => {
               const selezionata = categoriaId === cat.id;
               return (
@@ -174,14 +172,16 @@ export default function TransactionForm({
                   ]}
                   onPress={() => setCategoriaId(cat.id)}
                 >
-                  <View style={[stili.puntoCat, { backgroundColor: cat.colore }]} />
+                  <View style={[stili.puntoCat, { backgroundColor: cat.colore }]}>
+                    <Ionicons name={iconaCategoria(cat.nome)} size={11} color="#FFFFFF" />
+                  </View>
                   <Text style={[stili.testoCat, selezionata && { color: cat.colore, fontWeight: '700' }]}>
                     {cat.nome}
                   </Text>
                 </TouchableOpacity>
               );
             })}
-          </ScrollView>
+          </View>
 
           {/* ── Data ── */}
           <Text style={stili.etichetta}>Data</Text>
@@ -215,12 +215,7 @@ export default function TransactionForm({
           {istituti.length > 0 && (
             <>
               <Text style={stili.etichetta}>Istituto (opzionale)</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={{ marginHorizontal: -20 }}
-                contentContainerStyle={{ paddingHorizontal: 20 }}
-              >
+              <View style={stili.righeCategoria}>
                 {istituti.map((ist) => {
                   const selezionato = istitutoId === ist.id;
                   return (
@@ -235,7 +230,7 @@ export default function TransactionForm({
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
+              </View>
             </>
           )}
 
@@ -436,23 +431,29 @@ function creaStili(t: Tema) {
     },
 
     // ── Chip categoria ──
+    righeCategoria: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+    },
     chipCategoria: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 7,
       paddingHorizontal: 14,
-      paddingVertical: 10,
+      paddingVertical: 8,
+      paddingLeft: 8,
       borderRadius: 22,
       borderWidth: 1.5,
       borderColor: t.bordo,
       backgroundColor: t.carta,
-      marginRight: 8,
-      marginBottom: 4,
     },
     puntoCat: {
-      width: 9,
-      height: 9,
-      borderRadius: 5,
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      alignItems: 'center',
+      justifyContent: 'center',
       flexShrink: 0,
     },
     testoCat: {
@@ -484,8 +485,6 @@ function creaStili(t: Tema) {
       borderWidth: 1.5,
       borderColor: t.bordo,
       backgroundColor: t.carta,
-      marginRight: 8,
-      marginBottom: 4,
     },
     chipIstitutoAttivo: {
       backgroundColor: t.primario,

@@ -3,33 +3,42 @@ import { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import RicorrentiVista from '../../components/pianifica/RicorrentiVista';
 import ObiettiviVista from '../../components/pianifica/ObiettiviVista';
+import BudgetVista from '../../components/pianifica/BudgetVista';
 import { useTema, Tema } from '../../constants/tema';
 
-type SottoVista = 'ricorrenti' | 'obiettivi';
+type SottoVista = 'budget' | 'ricorrenti' | 'obiettivi';
+
+const ETICHETTE: Record<SottoVista, string> = {
+  budget: 'Budget',
+  ricorrenti: 'Ricorrenti',
+  obiettivi: 'Obiettivi',
+};
 
 export default function PianificazioneScreen() {
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
 
-  const [sottoVista, setSottoVista] = useState<SottoVista>('ricorrenti');
+  const [sottoVista, setSottoVista] = useState<SottoVista>('budget');
 
   return (
     <View style={stili.contenitore}>
       <View style={stili.toggleContenitore}>
-        {(['ricorrenti', 'obiettivi'] as SottoVista[]).map((v) => (
+        {(['budget', 'ricorrenti', 'obiettivi'] as SottoVista[]).map((v) => (
           <TouchableOpacity
             key={v}
             style={[stili.tab, sottoVista === v && stili.tabAttivo]}
             onPress={() => setSottoVista(v)}
           >
             <Text style={[stili.testoTab, sottoVista === v && stili.testoTabAttivo]}>
-              {v === 'ricorrenti' ? 'Ricorrenti' : 'Obiettivi'}
+              {ETICHETTE[v]}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
 
-      {sottoVista === 'ricorrenti' ? <RicorrentiVista /> : <ObiettiviVista />}
+      {sottoVista === 'budget' && <BudgetVista />}
+      {sottoVista === 'ricorrenti' && <RicorrentiVista />}
+      {sottoVista === 'obiettivi' && <ObiettiviVista />}
     </View>
   );
 }

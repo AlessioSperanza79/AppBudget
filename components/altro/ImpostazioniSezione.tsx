@@ -8,6 +8,7 @@ import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
 import { oggiIso } from '../../utils/formatters';
 import PressableScale from '../../components/PressableScale';
+import ImportaCsvModal from './ImportaCsvModal';
 import { useTema, Tema } from '../../constants/tema';
 
 const OPZIONI_TEMA: Array<{ key: PreferenzaTema; label: string; icona: keyof typeof Ionicons.glyphMap }> = [
@@ -54,6 +55,9 @@ export default function ImpostazioniSezione() {
         <Ionicons name="cloud-download-outline" size={18} color={t.primario} />
         <Text style={stili.testoBtnBackup}>Esporta backup JSON</Text>
       </PressableScale>
+
+      {/* ── Import CSV ── */}
+      <ImportaCsvModal />
     </View>
   );
 }

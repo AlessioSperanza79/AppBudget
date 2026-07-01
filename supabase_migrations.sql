@@ -28,3 +28,6 @@ CREATE POLICY "Consenti tutto su obiettivi" ON obiettivi
 -- ── 3. Realtime: aggiungi la nuova tabella alla pubblicazione realtime ──
 -- (necessario solo se le altre tabelle sono già nella pubblicazione)
 ALTER PUBLICATION supabase_realtime ADD TABLE obiettivi;
+
+-- ── 4. Piano a somma zero: rollover dell'avanzo di budget tra un mese e l'altro ──
+ALTER TABLE categorie ADD COLUMN IF NOT EXISTS rollover boolean NOT NULL DEFAULT false;

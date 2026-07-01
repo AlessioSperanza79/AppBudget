@@ -2,13 +2,17 @@ import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import AppLock from '@/components/AppLock';
+import NotificheManager from '@/components/NotificheManager';
 import TourIntroduttivo from '@/components/onboarding/TourIntroduttivo';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useFinanceStore } from '@/store/useFinanceStore';
 import { usePreferenze } from '@/store/usePreferenze';
+import { useSicurezza } from '@/store/useSicurezza';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -32,8 +36,14 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!loaded) return;
+    // Attende anche l'idratazione delle preferenze di sicurezza, per sapere già al primo
+    // frame visibile se mostrare il blocco PIN (evita un flash di contenuto sbloccato)
+    const idratazioneSicurezza = new Promise<void>((resolve) => {
+      if (useSicurezza.persist.hasHydrated()) resolve();
+      else useSicurezza.persist.onFinishHydration(() => resolve());
+    });
     // Carica i dati dal db, poi mostra l'app; avvia anche la sync in tempo reale
-    caricaDati().then(() => SplashScreen.hideAsync());
+    Promise.all([caricaDati(), idratazioneSicurezza]).then(() => SplashScreen.hideAsync());
     return avviaRealtime();
   }, [loaded]);
 
@@ -56,6 +66,25 @@ function RootLayoutNav() {
     return usePreferenze.persist.onFinishHydration(verifica);
   }, []);
 
+  const pinHash = useSicurezza((s) => s.pinHash);
+  const [bloccato, setBloccato] = useState(true);
+
+  useEffect(() => {
+    // Stabilisce lo stato di blocco iniziale solo dopo l'idratazione (il valore vero
+    // arriva qui appena pronto, mentre lo splash nasconde eventuali frame intermedi)
+    const applica = () => setBloccato(!!useSicurezza.getState().pinHash);
+    if (useSicurezza.persist.hasHydrated()) applica();
+    return useSicurezza.persist.onFinishHydration(applica);
+  }, []);
+
+  useEffect(() => {
+    // Ri-blocca quando l'app torna in background/inattiva (es. cambio app, tab nascosta)
+    const sub = AppState.addEventListener('change', (stato) => {
+      if ((stato === 'background' || stato === 'inactive') && pinHash) setBloccato(true);
+    });
+    return () => sub.remove();
+  }, [pinHash]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
@@ -64,6 +93,8 @@ function RootLayoutNav() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
         <TourIntroduttivo visibile={mostraTour} onChiudi={() => setMostraTour(false)} />
+        <AppLock bloccato={bloccato} onSbloccato={() => setBloccato(false)} />
+        <NotificheManager />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

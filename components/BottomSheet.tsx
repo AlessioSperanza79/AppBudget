@@ -1,7 +1,7 @@
 // Foglio che scivola dal basso: si chiude toccando lo sfondo o trascinando verso il basso la maniglia
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, Dimensions, PanResponder, StyleProp, StyleSheet, TouchableWithoutFeedback, View, ViewStyle,
+  Animated, Dimensions, Modal, PanResponder, StyleProp, StyleSheet, TouchableWithoutFeedback, View, ViewStyle,
 } from 'react-native';
 import { Tema, useTema } from '../constants/tema';
 
@@ -57,17 +57,22 @@ export default function BottomSheet({ visibile, onChiudi, children, altezza, sti
   if (!renderizzato) return null;
 
   return (
-    <View style={stili.contenitore}>
-      <TouchableWithoutFeedback onPress={onChiudi}>
-        <Animated.View style={[stili.backdrop, { opacity: opacitaBackdrop }]} />
-      </TouchableWithoutFeedback>
-      <Animated.View style={[stili.foglio, altezza != null && { height: altezza }, stile, { transform: [{ translateY: traslazione }] }]}>
-        <View {...panResponder.panHandlers} style={stili.maniglia}>
-          <View style={stili.barraManiglia} />
-        </View>
-        {children}
-      </Animated.View>
-    </View>
+    // Il Modal fa uscire il foglio dal punto in cui è annidato nell'albero dei componenti e lo
+    // ancora sempre alla radice dello schermo: senza, un BottomSheet aperto da un componente
+    // innestato in una card si posizionerebbe rispetto a quella card invece che a tutto lo schermo
+    <Modal visible transparent animationType="none" onRequestClose={onChiudi} statusBarTranslucent>
+      <View style={stili.contenitore}>
+        <TouchableWithoutFeedback onPress={onChiudi}>
+          <Animated.View style={[stili.backdrop, { opacity: opacitaBackdrop }]} />
+        </TouchableWithoutFeedback>
+        <Animated.View style={[stili.foglio, altezza != null && { height: altezza }, stile, { transform: [{ translateY: traslazione }] }]}>
+          <View {...panResponder.panHandlers} style={stili.maniglia}>
+            <View style={stili.barraManiglia} />
+          </View>
+          {children}
+        </Animated.View>
+      </View>
+    </Modal>
   );
 }
 

@@ -365,6 +365,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
               <BarChart
                 data={datiGruppati}
                 barWidth={10}
+                labelWidth={40}
                 barBorderRadius={3}
                 yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
                 noOfSections={4}

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Transazione, Categoria, Istituto, TipologiaConto } from '../types';
 import { formatEuro, formatData } from '../utils/formatters';
+import { iconaCategoria } from '../utils/iconeCategorie';
 import { useTema, Tema } from '../constants/tema';
 
 const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = {
@@ -33,14 +34,13 @@ export default function TransactionItem({
   const isEntrata = transazione.tipo === 'entrata';
   const coloreImporto = isEntrata ? t.entrata : t.uscita;
   const coloreAvatar  = categoria?.colore ?? t.piuSottile;
-  const lettAvatar    = (categoria?.nome ?? '?').charAt(0).toUpperCase();
 
   const contenuto = (
     <View style={stili.riga}>
 
-      {/* Avatar cerchio con colore categoria e iniziale */}
+      {/* Avatar cerchio con colore e icona rappresentativa della categoria */}
       <View style={[stili.avatar, { backgroundColor: coloreAvatar }]}>
-        <Text style={stili.lettAvatar}>{lettAvatar}</Text>
+        <Ionicons name={iconaCategoria(categoria?.nome)} size={19} color="#FFFFFF" />
       </View>
 
       {/* Dettagli: categoria, data, istituto, nota */}
@@ -187,11 +187,6 @@ function creaStili(t: Tema) {
       justifyContent: 'center',
       alignItems: 'center',
       flexShrink: 0,
-    },
-    lettAvatar: {
-      fontSize: 16,
-      fontWeight: '800',
-      color: '#FFFFFF',
     },
     dettagli: {
       flex: 1,

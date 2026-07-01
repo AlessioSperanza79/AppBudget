@@ -22,6 +22,7 @@ interface FinanceState {
   avviaRealtime: () => () => void;
 
   aggiungiTransazione: (t: Omit<Transazione, 'id'>) => Promise<void>;
+  importaTransazioni: (righe: Omit<Transazione, 'id'>[]) => Promise<void>;
   modificaTransazione: (id: string, aggiornamenti: Partial<Omit<Transazione, 'id'>>) => Promise<void>;
   eliminaTransazione: (id: string) => Promise<void>;
 
@@ -33,6 +34,7 @@ interface FinanceState {
   eliminaCategoria: (id: string) => Promise<void>;
   aggiornaBudgetCategoria: (id: string, budget: number | undefined) => Promise<void>;
   aggiornaTipoCategoria: (id: string, tipo: TipoCategoria) => Promise<void>;
+  aggiornaRolloverCategoria: (id: string, rollover: boolean) => Promise<void>;
 
   aggiornaReddito: (r: number) => Promise<void>;
 
@@ -91,10 +93,11 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
     const transDb = transRis.data ?? [];
 
     set({
-      categorie: catDb.map(({ id, nome, colore, budget_mensile, tipo }): Categoria => ({
+      categorie: catDb.map(({ id, nome, colore, budget_mensile, tipo, rollover }): Categoria => ({
         id, nome, colore,
         tipo: (tipo as TipoCategoria) ?? 'variabile',
         ...(budget_mensile != null && { budgetMensile: Number(budget_mensile) }),
+        ...(rollover === true && { rollover: true }),
       })),
       istituti:  istDb.map(({ id, nome }): Istituto => ({ id, nome })),
       transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id, tag }): Transazione => ({
@@ -164,6 +167,30 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       tag: nuova.tag ?? null,
     });
     if (error) console.error('[Supabase] aggiungi transazione:', error.message, error.code);
+  },
+
+  // Inserimento massivo (import CSV): le categorie mancanti vanno create PRIMA di chiamare questa azione
+  importaTransazioni: async (righe) => {
+    const nuove: Transazione[] = righe.map((r) => ({ ...r, id: generaId() }));
+    set((s) => ({ transazioni: [...nuove, ...s.transazioni] }));
+    const { error } = await supabase.from('transazioni').insert(nuove.map((t) => ({
+      id: t.id,
+      importo: t.importo,
+      tipo: t.tipo,
+      categoria_id: t.categoriaId,
+      data: t.data,
+      nota: t.nota ?? null,
+      tipologia: t.tipologia ?? null,
+      istituto_id: t.istitutoId ?? null,
+      ricorrente: false,
+      data_fine: null,
+      template_id: null,
+      tag: t.tag ?? null,
+    })));
+    if (error) {
+      console.error('[Supabase] importa transazioni:', error.message, error.code);
+      await get().caricaDati();
+    }
   },
 
   // Crea il modello ricorrente e tutte le transazioni reali fino a dataFine
@@ -310,6 +337,13 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       categorie: s.categorie.map((c) => c.id === id ? { ...c, tipo } : c),
     }));
     await supabase.from('categorie').update({ tipo }).eq('id', id);
+  },
+
+  aggiornaRolloverCategoria: async (id, rollover) => {
+    set((s) => ({
+      categorie: s.categorie.map((c) => c.id === id ? { ...c, rollover } : c),
+    }));
+    await supabase.from('categorie').update({ rollover }).eq('id', id);
   },
 
   aggiornaReddito: async (r) => {

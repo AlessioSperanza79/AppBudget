@@ -11,21 +11,18 @@ import PressableScale from '../../components/PressableScale';
 import BottomSheet from '../../components/BottomSheet';
 import ConfermaDialog from '../../components/ConfermaDialog';
 import ImpostazioniSezione from '../../components/altro/ImpostazioniSezione';
+import SicurezzaSezione from '../../components/altro/SicurezzaSezione';
+import NotificheSezione from '../../components/altro/NotificheSezione';
 import TourIntroduttivo from '../../components/onboarding/TourIntroduttivo';
 import { useTema, Tema } from '../../constants/tema';
+import { PALETTE_CATEGORIE } from '../../constants/paletteCategorie';
 import { formatEuro } from '../../utils/formatters';
+import { iconaCategoria } from '../../utils/iconeCategorie';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
-const PALETTE: string[] = [
-  '#2E7D32', '#66BB6A', '#E53935', '#2563EB',
-  '#F57F17', '#6A1B9A', '#00838F', '#AD1457',
-  '#BF360C', '#78909C', '#FF7043', '#0288D1',
-  '#43A047', '#C0CA33', '#FFB300', '#8D6E63',
-  '#5E35B1', '#00ACC1', '#D81B60', '#3949AB',
-  '#7CB342', '#FB8C00', '#546E7A', '#26A69A',
-];
+const PALETTE: string[] = PALETTE_CATEGORIE;
 
 const TIPI: Array<{ key: TipoCategoria; label: string; colore: string }> = [
   { key: 'fissa',        label: 'Fissa',        colore: '#2563EB' },
@@ -132,6 +129,10 @@ export default function AltroScreen() {
 
       <ImpostazioniSezione />
 
+      <NotificheSezione />
+
+      <SicurezzaSezione />
+
       {/* ── Card Aiuto: rilancia il tour introduttivo ── */}
       <PressableScale style={stili.cardAiuto} onPress={() => setTourVisibile(true)}>
         <View style={stili.cerchioAiuto}>
@@ -175,7 +176,7 @@ export default function AltroScreen() {
               <View style={stili.riga}>
                 <View style={stili.rigaPrincipale}>
                   <View style={[stili.avatarCategoria, { backgroundColor: item.colore }]}>
-                    <Text style={stili.lettAvatar}>{item.nome.charAt(0).toUpperCase()}</Text>
+                    <Ionicons name={iconaCategoria(item.nome)} size={17} color="#FFFFFF" />
                   </View>
                   <Text style={stili.nome}>{item.nome}</Text>
                   <View style={[stili.badgeTipo, { backgroundColor: tipo.colore + '18' }]}>
@@ -549,11 +550,6 @@ function creaStili(t: Tema) {
       justifyContent: 'center',
       alignItems: 'center',
       flexShrink: 0,
-    },
-    lettAvatar: {
-      fontSize: 14,
-      fontWeight: '800',
-      color: '#FFFFFF',
     },
     nome: {
       flex: 1,

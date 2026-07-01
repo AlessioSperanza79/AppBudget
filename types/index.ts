@@ -18,6 +18,7 @@ export interface Categoria {
   colore: string; // colore esadecimale, es. "#E53935"
   budgetMensile?: number; // limite di spesa mensile (solo uscite)
   tipo: TipoCategoria; // classificazione per il cruscotto flusso
+  rollover?: boolean; // true = l'avanzo (o lo sforamento) del mese precedente si riporta nel piano a somma zero
 }
 
 /** Un istituto bancario o conto (es. "Revolut", "Intesa Sanpaolo") */

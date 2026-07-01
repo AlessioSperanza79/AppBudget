@@ -234,6 +234,20 @@ export default function RiepilogoScreen() {
     ? t.gradientePositivo
     : t.gradienteNegativo;
 
+  // Confronto con il saldo del mese precedente: una differenza in euro è più leggibile di una
+  // percentuale quando il saldo può cambiare segno da un mese all'altro (rende una % fuorviante)
+  const saldoMesePrecedente = useMemo(() => {
+    if (periodo !== 'mensile') return null;
+    const d = new Date(dataCorrente.getFullYear(), dataCorrente.getMonth() - 1, 1);
+    const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return transazioni
+      .filter((tr) => !tr.ricorrente && tr.data.startsWith(chiave))
+      .reduce((acc, tr) => acc + (tr.tipo === 'entrata' ? tr.importo : -tr.importo), 0);
+  }, [periodo, dataCorrente, transazioni]);
+
+  const variazioneSaldo = saldoMesePrecedente != null ? saldo - saldoMesePrecedente : null;
+  const nomeMesePrecedenteBreve = MESI[(dataCorrente.getMonth() + 11) % 12].substring(0, 3).toLowerCase();
+
   const apriModaleReddito = () => {
     setRedditoInput(reddito > 0 ? String(reddito) : '');
     setModaleReddito(true);
@@ -304,6 +318,18 @@ export default function RiepilogoScreen() {
               formatta={(n) => `${n >= 0 ? '+' : ''}${formatEuro(n)}`}
               style={stili.valoreSaldo}
             />
+            {variazioneSaldo != null && variazioneSaldo !== 0 && (
+              <View style={stili.badgeVariazione}>
+                <Ionicons
+                  name={variazioneSaldo >= 0 ? 'arrow-up' : 'arrow-down'}
+                  size={11}
+                  color="#FFFFFF"
+                />
+                <Text style={stili.testoVariazione}>
+                  {variazioneSaldo >= 0 ? '+' : ''}{formatEuro(variazioneSaldo)} vs {nomeMesePrecedenteBreve}
+                </Text>
+              </View>
+            )}
             <View style={stili.rigaStat}>
               <View style={stili.stat}>
                 <View style={stili.rigaStatIcon}>
@@ -661,6 +687,22 @@ function creaStili(t: Tema) {
       fontWeight: '800',
       letterSpacing: -1.5,
       marginTop: 4,
+    },
+    badgeVariazione: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      gap: 4,
+      marginTop: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 20,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+    },
+    testoVariazione: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '700',
     },
     rigaStat: {
       flexDirection: 'row',
