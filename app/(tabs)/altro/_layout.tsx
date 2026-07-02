@@ -20,6 +20,7 @@ export default function AltroLayout() {
       <Stack.Screen name="impostazioni" options={{ title: 'Impostazioni' }} />
       <Stack.Screen name="categorie" options={{ title: 'Categorie' }} />
       <Stack.Screen name="conti" options={{ title: 'Conti & Istituti' }} />
+      <Stack.Screen name="guida" options={{ title: 'Guida' }} />
     </Stack>
   );
 }

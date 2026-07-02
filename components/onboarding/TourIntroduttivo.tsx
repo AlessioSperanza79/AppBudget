@@ -1,4 +1,4 @@
-// ── Tour introduttivo: spiega le schede principali dell'app al primo avvio (o su richiesta da "Aiuto") ──
+// ── Tour introduttivo: carosello rapido mostrato una sola volta, al primissimo avvio dell'app ──
 import { useEffect, useRef, useState } from 'react';
 import { PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Text from '../TestoBase';
@@ -64,13 +64,15 @@ export default function TourIntroduttivo({ visibile, onChiudi }: ProprietaTour) 
   const setTourCompletato = usePreferenze((s) => s.setTourCompletato);
 
   const [indice, setIndice] = useState(0);
-  const [nonMostrarePiu, setNonMostrarePiu] = useState(false);
 
   const ultima = indice === DIAPOSITIVE.length - 1;
   const diapositiva = DIAPOSITIVE[indice];
 
+  // Il tour va mostrato solo al primo accesso: qualunque sia il modo in cui viene chiuso
+  // (Salta, ultima diapositiva) va segnato come completato per non ripresentarsi ai
+  // successivi avvii — la spiegazione completa e rivisitabile vive in Altro → Guida
   const chiudi = () => {
-    setTourCompletato(nonMostrarePiu);
+    setTourCompletato(true);
     setIndice(0);
     onChiudi();
   };
@@ -138,13 +140,6 @@ export default function TourIntroduttivo({ visibile, onChiudi }: ProprietaTour) 
             </TouchableOpacity>
           ))}
         </View>
-
-        <TouchableOpacity style={stili.rigaCheckbox} onPress={() => setNonMostrarePiu((v) => !v)} hitSlop={8}>
-          <View style={[stili.checkbox, nonMostrarePiu && stili.checkboxAttivo]}>
-            {nonMostrarePiu && <Ionicons name="checkmark" size={14} color="#FFFFFF" />}
-          </View>
-          <Text style={stili.testoCheckbox}>Non mostrare più</Text>
-        </TouchableOpacity>
 
         <PressableScale onPress={gestisciAvanti}>
           <LinearGradient
@@ -234,29 +229,6 @@ function creaStili(t: Tema) {
     puntinoAttivo: {
       width: 24,
       backgroundColor: t.primario,
-    },
-    rigaCheckbox: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 8,
-    },
-    checkbox: {
-      width: 20,
-      height: 20,
-      borderRadius: 5,
-      borderWidth: 1.5,
-      borderColor: t.bordo,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    checkboxAttivo: {
-      backgroundColor: t.primario,
-      borderColor: t.primario,
-    },
-    testoCheckbox: {
-      fontSize: 14,
-      color: t.sottile,
-      fontWeight: '500',
     },
     btnAvanti: {
       width: '100%',

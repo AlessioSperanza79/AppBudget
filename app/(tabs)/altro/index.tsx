@@ -1,28 +1,26 @@
 // ── Hub della tab Altro: elenco di voci verso le sotto-schermate di impostazione ──
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import Text from '../../../components/TestoBase';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import PressableScale from '../../../components/PressableScale';
-import TourIntroduttivo from '../../../components/onboarding/TourIntroduttivo';
 import ContenitoreScheda from '../../../components/ContenitoreScheda';
 import { useTema, Tema } from '../../../constants/tema';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
 
-const VOCI: { chiave: string; titolo: string; sottotitolo: string; icona: IoniconName; rotta?: string }[] = [
+const VOCI: { chiave: string; titolo: string; sottotitolo: string; icona: IoniconName; rotta: string }[] = [
   { chiave: 'impostazioni', titolo: 'Impostazioni', sottotitolo: 'Tema, notifiche, sicurezza, backup', icona: 'settings-outline', rotta: '/altro/impostazioni' },
   { chiave: 'categorie',    titolo: 'Categorie',     sottotitolo: 'Gestisci le categorie di spesa e i budget', icona: 'pricetags-outline', rotta: '/altro/categorie' },
   { chiave: 'conti',        titolo: 'Conti & Istituti', sottotitolo: 'Banche, carte e conti collegati', icona: 'business-outline', rotta: '/altro/conti' },
-  { chiave: 'aiuto',        titolo: 'Aiuto',         sottotitolo: "Rivedi il tour introduttivo dell'app", icona: 'help-circle-outline' },
+  { chiave: 'guida',        titolo: 'Guida',         sottotitolo: "Come funziona ogni parte dell'app", icona: 'help-circle-outline', rotta: '/altro/guida' },
 ];
 
 export default function AltroHub() {
   const router = useRouter();
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
-  const [tourVisibile, setTourVisibile] = useState(false);
 
   return (
     <ContenitoreScheda style={stili.contenitore}>
@@ -30,7 +28,7 @@ export default function AltroHub() {
         <PressableScale
           key={chiave}
           style={stili.riga}
-          onPress={() => (rotta ? router.push(rotta as never) : setTourVisibile(true))}
+          onPress={() => router.push(rotta as never)}
         >
           <View style={stili.cerchioIcona}>
             <Ionicons name={icona} size={20} color={t.primario} />
@@ -42,8 +40,6 @@ export default function AltroHub() {
           <Ionicons name="chevron-forward" size={18} color={t.piuSottile} />
         </PressableScale>
       ))}
-
-      <TourIntroduttivo visibile={tourVisibile} onChiudi={() => setTourVisibile(false)} />
     </ContenitoreScheda>
   );
 }
