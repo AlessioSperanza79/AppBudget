@@ -31,6 +31,11 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   const [focoTortaMese, setFocoTortaMese] = useState<number | null>(null);
   const [focoTortaAnno, setFocoTortaAnno] = useState<number | null>(null);
 
+  // Indice della barra toccata nei vari istogrammi — null quando nessuna è selezionata
+  const [barraConfrontoMese, setBarraConfrontoMese]   = useState<number | null>(null);
+  const [barraSettimanale, setBarraSettimanale]       = useState<number | null>(null);
+  const [barraConfrontoAnno, setBarraConfrontoAnno]   = useState<number | null>(null);
+
   const { width: LARGHEZZA } = useWindowDimensions();
   // margini sezione (16×2=32) + padding sezione (20×2=40) + asse-y gifted-charts (35) = 107
   const LARGHEZZA_CHART = LARGHEZZA - 108;
@@ -63,9 +68,9 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
     [transazioni, categorie, annoSel],
   );
 
-  // Deselezionare la fetta quando cambia il periodo, altrimenti l'indice punterebbe a un'altra categoria
-  useEffect(() => { setFocoTortaMese(null); }, [annoSel, meseSel]);
-  useEffect(() => { setFocoTortaAnno(null); }, [annoSel]);
+  // Deselezionare la fetta/barra quando cambia il periodo, altrimenti l'indice punterebbe a un altro dato
+  useEffect(() => { setFocoTortaMese(null); setBarraConfrontoMese(null); setBarraSettimanale(null); }, [annoSel, meseSel]);
+  useEffect(() => { setFocoTortaAnno(null); setBarraConfrontoAnno(null); }, [annoSel]);
 
   const chiaveMese = `${annoSel}-${String(meseSel + 1).padStart(2, '0')}`;
 
@@ -186,6 +191,10 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
     { value: totaleUsciteMese,  frontColor: t.uscita,             label: 'Uscite',  labelTextStyle: { fontSize: 9, color: t.piuSottile }, spacing: 4 },
     { value: usciteMesePrec,    frontColor: t.uscita + '60',      spacing: 0 },
   ];
+  const etichetteConfrontoMese = [
+    `Entrate — ${MESI[meseSel]}`, `Entrate — ${nomeMesePrec}`,
+    `Uscite — ${MESI[meseSel]}`,  `Uscite — ${nomeMesePrec}`,
+  ];
   const datiTrendRisparmio = mesiAnno.map((m, i) => ({
     value: m.entrate - m.uscite,
     label: MESI_BREVI[i],
@@ -198,6 +207,10 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
     { value: annoPrecTotali.entrate, frontColor: t.entrata + '60', spacing: 24 },
     { value: totaleUsciteAnno,       frontColor: t.uscita,         label: 'Uscite',  labelTextStyle: { fontSize: 9, color: t.piuSottile }, spacing: 4 },
     { value: annoPrecTotali.uscite,  frontColor: t.uscita + '60',  spacing: 0 },
+  ];
+  const etichetteConfrontoAnno = [
+    `Entrate — ${annoSel}`, `Entrate — ${annoSel - 1}`,
+    `Uscite — ${annoSel}`,  `Uscite — ${annoSel - 1}`,
   ];
 
   return (
@@ -304,6 +317,11 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   </View>
                 ))}
               </View>
+              {barraConfrontoMese != null && (
+                <Text style={stili.calloutBarra}>
+                  {etichetteConfrontoMese[barraConfrontoMese]}: <Text style={stili.calloutBarraValore}>{formatEuro(datiConfrontoMese[barraConfrontoMese].value)}</Text>
+                </Text>
+              )}
               <BarChart
                 data={datiConfrontoMese}
                 barWidth={26}
@@ -314,6 +332,9 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                 hideRules
                 width={LARGHEZZA_CHART}
                 disableScroll
+                onPress={(_item: unknown, index: number) =>
+                  setBarraConfrontoMese((prec) => (prec === index ? null : index))
+                }
               />
             </View>
           )}
@@ -322,6 +343,11 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
           {datiSettimanali.some((d) => d.value > 0) && (
             <View style={stili.sezione}>
               <Text style={stili.titoloSezione}>Spesa settimanale — {MESI[meseSel]}</Text>
+              {barraSettimanale != null && (
+                <Text style={stili.calloutBarra}>
+                  {datiSettimanali[barraSettimanale].label}: <Text style={stili.calloutBarraValore}>{formatEuro(datiSettimanali[barraSettimanale].value)}</Text>
+                </Text>
+              )}
               <BarChart
                 data={datiSettimanali}
                 barWidth={Math.floor((LARGHEZZA_CHART - 50) / 4)}
@@ -332,6 +358,9 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                 hideRules
                 width={LARGHEZZA_CHART}
                 disableScroll
+                onPress={(_item: unknown, index: number) =>
+                  setBarraSettimanale((prec) => (prec === index ? null : index))
+                }
               />
             </View>
           )}
@@ -456,6 +485,11 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   </View>
                 ))}
               </View>
+              {barraConfrontoAnno != null && (
+                <Text style={stili.calloutBarra}>
+                  {etichetteConfrontoAnno[barraConfrontoAnno]}: <Text style={stili.calloutBarraValore}>{formatEuro(datiConfrontoAnno[barraConfrontoAnno].value)}</Text>
+                </Text>
+              )}
               <BarChart
                 data={datiConfrontoAnno}
                 barWidth={28}
@@ -466,6 +500,9 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                 hideRules
                 width={LARGHEZZA_CHART}
                 disableScroll
+                onPress={(_item: unknown, index: number) =>
+                  setBarraConfrontoAnno((prec) => (prec === index ? null : index))
+                }
               />
             </View>
           )}
@@ -582,6 +619,15 @@ function creaStili(t: Tema) {
       fontSize: 13,
       fontWeight: '600',
       marginBottom: 12,
+    },
+    calloutBarra: {
+      fontSize: 12,
+      color: t.sottile,
+      marginBottom: 8,
+    },
+    calloutBarraValore: {
+      fontWeight: '700',
+      color: t.titolo,
     },
     vuotoSezione: {
       textAlign: 'center',
