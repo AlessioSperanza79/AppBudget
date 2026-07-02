@@ -11,6 +11,7 @@ import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import GraficiVista from '../../components/analisi/GraficiVista';
 import TabelleVista from '../../components/analisi/TabelleVista';
+import ContenitoreScheda from '../../components/ContenitoreScheda';
 import { useTema, Tema } from '../../constants/tema';
 
 type Vista = 'mensile' | 'annuale';
@@ -79,7 +80,7 @@ export default function AnalisiScreen() {
   }
 
   return (
-    <View style={stili.contenitore}>
+    <ContenitoreScheda style={stili.contenitore}>
 
       {/* ── Toggle Grafici / Tabelle ── */}
       <View style={stili.toggleContenitore}>
@@ -162,7 +163,7 @@ export default function AnalisiScreen() {
           periodoLabel={periodoLabel}
         />
       )}
-    </View>
+    </ContenitoreScheda>
   );
 }
 

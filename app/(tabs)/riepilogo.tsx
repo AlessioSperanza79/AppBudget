@@ -11,6 +11,7 @@ import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import SuggerimentoNovita from '../../components/SuggerimentoNovita';
 import TransactionForm from '../../components/TransactionForm';
+import ContenitoreScheda from '../../components/ContenitoreScheda';
 import { Tema, useTema, FONT_ESPRESSIVO } from '../../constants/tema';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
@@ -397,7 +398,7 @@ export default function RiepilogoScreen() {
   };
 
   return (
-    <View style={stili.contenitore}>
+    <ContenitoreScheda style={stili.contenitore}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
@@ -762,7 +763,7 @@ export default function RiepilogoScreen() {
         categorie={categorie}
         istituti={istituti}
       />
-    </View>
+    </ContenitoreScheda>
   );
 }
 

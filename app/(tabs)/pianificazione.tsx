@@ -5,6 +5,7 @@ import Text from '../../components/TestoBase';
 import RicorrentiVista from '../../components/pianifica/RicorrentiVista';
 import ObiettiviVista from '../../components/pianifica/ObiettiviVista';
 import BudgetVista from '../../components/pianifica/BudgetVista';
+import ContenitoreScheda from '../../components/ContenitoreScheda';
 import { useTema, Tema } from '../../constants/tema';
 
 type SottoVista = 'budget' | 'ricorrenti' | 'obiettivi';
@@ -22,7 +23,7 @@ export default function PianificazioneScreen() {
   const [sottoVista, setSottoVista] = useState<SottoVista>('budget');
 
   return (
-    <View style={stili.contenitore}>
+    <ContenitoreScheda style={stili.contenitore}>
       <View style={stili.toggleContenitore}>
         {(['budget', 'ricorrenti', 'obiettivi'] as SottoVista[]).map((v) => (
           <TouchableOpacity
@@ -40,7 +41,7 @@ export default function PianificazioneScreen() {
       {sottoVista === 'budget' && <BudgetVista />}
       {sottoVista === 'ricorrenti' && <RicorrentiVista />}
       {sottoVista === 'obiettivi' && <ObiettiviVista />}
-    </View>
+    </ContenitoreScheda>
   );
 }
 

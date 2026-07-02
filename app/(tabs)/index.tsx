@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
+import ContenitoreScheda from '../../components/ContenitoreScheda';
 import EmptyState from '../../components/EmptyState';
 import IllustrazioneMovimenti from '../../components/illustrazioni/IllustrazioneMovimenti';
 import FadeInView from '../../components/FadeInView';
@@ -184,7 +185,7 @@ export default function TransazioniScreen() {
   };
 
   return (
-    <View style={stili.contenitore}>
+    <ContenitoreScheda style={stili.contenitore}>
 
       {/* ── Toggle Mensile / Annuale + Navigatore ── */}
       <FadeInView style={stili.controlliContenitore}>
@@ -463,7 +464,7 @@ export default function TransazioniScreen() {
           </View>
         </View>
       </BottomSheet>
-    </View>
+    </ContenitoreScheda>
   );
 }
 

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import PressableScale from '../../../components/PressableScale';
 import TourIntroduttivo from '../../../components/onboarding/TourIntroduttivo';
+import ContenitoreScheda from '../../../components/ContenitoreScheda';
 import { useTema, Tema } from '../../../constants/tema';
 
 type IoniconName = keyof typeof Ionicons.glyphMap;
@@ -24,7 +25,7 @@ export default function AltroHub() {
   const [tourVisibile, setTourVisibile] = useState(false);
 
   return (
-    <View style={stili.contenitore}>
+    <ContenitoreScheda style={stili.contenitore}>
       {VOCI.map(({ chiave, titolo, sottotitolo, icona, rotta }) => (
         <PressableScale
           key={chiave}
@@ -43,7 +44,7 @@ export default function AltroHub() {
       ))}
 
       <TourIntroduttivo visibile={tourVisibile} onChiudi={() => setTourVisibile(false)} />
-    </View>
+    </ContenitoreScheda>
   );
 }
 
