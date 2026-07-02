@@ -85,19 +85,21 @@ export default function SicurezzaSezione() {
       </View>
 
       {!!pinHash && (
-        <>
-          <TouchableOpacity style={stili.rigaAzione} onPress={apriImpostaPin}>
-            <Ionicons name="key-outline" size={18} color={t.primario} />
-            <Text style={stili.testoRigaAzione}>Cambia PIN</Text>
-          </TouchableOpacity>
+        <TouchableOpacity style={stili.rigaAzione} onPress={apriImpostaPin}>
+          <Ionicons name="key-outline" size={18} color={t.primario} />
+          <Text style={stili.testoRigaAzione}>Cambia PIN</Text>
+        </TouchableOpacity>
+      )}
 
-          {biometriaSupportata && (
-            <View style={stili.riga}>
-              <Text style={stili.etichettaRiga}>Sblocco con impronta/Face ID</Text>
-              <Switch value={biometriaAttiva} onValueChange={gestisciToggleBiometria} trackColor={{ true: t.primario }} />
-            </View>
-          )}
-        </>
+      {/* Indipendente dal PIN: si può usare solo la biometria, solo il PIN, o entrambi */}
+      {biometriaSupportata && (
+        <View style={stili.riga}>
+          <View style={{ flex: 1 }}>
+            <Text style={stili.etichettaRiga}>Sblocco con impronta/Face ID</Text>
+            <Text style={stili.descrizioneRiga}>Richiede la biometria all'apertura dell'app</Text>
+          </View>
+          <Switch value={biometriaAttiva} onValueChange={gestisciToggleBiometria} trackColor={{ true: t.primario }} />
+        </View>
       )}
 
       {/* ── Modal imposta/cambia PIN ── */}

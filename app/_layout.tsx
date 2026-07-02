@@ -68,6 +68,8 @@ function RootLayoutNav() {
   }, []);
 
   const pinHash = useSicurezza((s) => s.pinHash);
+  const biometriaAttiva = useSicurezza((s) => s.biometriaAttiva);
+  const bloccoAttivo = !!pinHash || biometriaAttiva;
   const [bloccato, setBloccato] = useState(true);
 
   useEffect(() => {
@@ -75,8 +77,12 @@ function RootLayoutNav() {
     // arriva qui appena pronto, mentre lo splash nasconde eventuali frame intermedi).
     // Sul web, se lo sblocco era già avvenuto in questa scheda del browser, non richiede
     // di nuovo il PIN: un refresh è un'azione frequente e involontaria, non un riavvio
-    // deliberato come su mobile (dove il blocco a ogni avvio a freddo resta corretto)
-    const applica = () => setBloccato(!!useSicurezza.getState().pinHash && !sessioneGiaSbloccata());
+    // deliberato come su mobile (dove il blocco a ogni avvio a freddo resta corretto).
+    // Il blocco (PIN o biometria, indipendenti tra loro) scatta se almeno uno è attivo
+    const applica = () => {
+      const s = useSicurezza.getState();
+      setBloccato((!!s.pinHash || s.biometriaAttiva) && !sessioneGiaSbloccata());
+    };
     if (useSicurezza.persist.hasHydrated()) applica();
     return useSicurezza.persist.onFinishHydration(applica);
   }, []);
@@ -87,10 +93,10 @@ function RootLayoutNav() {
     // per giustificare una nuova richiesta di PIN nella stessa sessione della pagina
     if (Platform.OS === 'web') return;
     const sub = AppState.addEventListener('change', (stato) => {
-      if ((stato === 'background' || stato === 'inactive') && pinHash) setBloccato(true);
+      if ((stato === 'background' || stato === 'inactive') && bloccoAttivo) setBloccato(true);
     });
     return () => sub.remove();
-  }, [pinHash]);
+  }, [bloccoAttivo]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

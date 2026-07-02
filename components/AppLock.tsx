@@ -76,12 +76,30 @@ export default function AppLock({ bloccato, onSbloccato }: ProprietaAppLock) {
     return () => { annullato = true; };
   }, [pin]);
 
-  if (!bloccato || !pinHash) return null;
+  if (!bloccato || !(pinHash || biometriaAttiva)) return null;
 
   const premiTasto = (tasto: string) => {
     if (tasto === 'backspace') setPin((p) => p.slice(0, -1));
     else if (tasto !== '') setPin((p) => (p.length < LUNGHEZZA_PIN ? p + tasto : p));
   };
+
+  // Nessun PIN impostato: l'unico metodo di sblocco è la biometria, niente tastiera numerica
+  if (!pinHash) {
+    return (
+      <View style={stili.overlay}>
+        <View style={stili.contenuto}>
+          <View style={stili.iconaCerchio}>
+            <Ionicons name="finger-print" size={26} color={t.primario} />
+          </View>
+          <Text style={stili.titolo}>Autenticazione richiesta</Text>
+          <Text style={stili.sottotitolo}>Usa l'impronta o il Face ID per sbloccare AppBudget</Text>
+          <TouchableOpacity style={stili.btnRiprova} onPress={provaBiometria}>
+            <Text style={stili.testoBtnRiprova}>Riprova</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={stili.overlay}>
@@ -159,6 +177,25 @@ function creaStili(t: Tema) {
       fontWeight: '700',
       color: t.titolo,
       marginBottom: 8,
+    },
+    sottotitolo: {
+      fontSize: 13,
+      color: t.sottile,
+      textAlign: 'center',
+      maxWidth: 240,
+      marginTop: -4,
+      marginBottom: 24,
+    },
+    btnRiprova: {
+      paddingVertical: 12,
+      paddingHorizontal: 28,
+      borderRadius: 14,
+      backgroundColor: t.primario,
+    },
+    testoBtnRiprova: {
+      color: '#FFFFFF',
+      fontSize: 15,
+      fontWeight: '700',
     },
     rigaDot: {
       flexDirection: 'row',

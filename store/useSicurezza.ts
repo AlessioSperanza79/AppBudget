@@ -31,7 +31,8 @@ export const useSicurezza = create<SicurezzaState>()(
         return hash !== null && hash === (await hashPin(pin));
       },
 
-      disattivaBlocco: () => set({ pinHash: null, biometriaAttiva: false }),
+      // Disattiva solo il PIN: la biometria, se attivata autonomamente, resta indipendente
+      disattivaBlocco: () => set({ pinHash: null }),
 
       setBiometriaAttiva: (biometriaAttiva) => set({ biometriaAttiva }),
     }),
