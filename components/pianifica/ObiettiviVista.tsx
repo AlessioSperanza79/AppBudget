@@ -119,6 +119,8 @@ export default function ObiettiviVista() {
           <EmptyState
             icona="flag-outline"
             messaggio={'Nessun obiettivo di risparmio.\nCreane uno per iniziare ad accantonare.'}
+            azioneLabel="Aggiungi obiettivo"
+            onAzione={apriNuovoObiettivo}
           />
         }
         renderItem={({ item }) => {

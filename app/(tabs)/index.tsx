@@ -10,7 +10,9 @@ import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import BottomSheet from '../../components/BottomSheet';
 import ConfermaDialog from '../../components/ConfermaDialog';
+import SuggerimentoNovita from '../../components/SuggerimentoNovita';
 import { useTema, Tema } from '../../constants/tema';
+import { usePreferenze } from '../../store/usePreferenze';
 import { Transazione, TipoTransazione, TipologiaConto } from '../../types';
 import { oggiIso } from '../../utils/formatters';
 import { generaCsvTransazioni } from '../../utils/csv';
@@ -29,6 +31,8 @@ const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo 
 export default function TransazioniScreen() {
   const { transazioni, categorie, istituti, aggiungiTransazione, modificaTransazione, eliminaTransazione } =
     useFinanceStore();
+  const suggerimentoFiltriVisto = usePreferenze((s) => !!s.suggerimentiVisti['filtri-movimenti']);
+  const segnaSuggerimentoVisto = usePreferenze((s) => s.segnaSuggerimentoVisto);
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -46,15 +50,18 @@ export default function TransazioniScreen() {
   const [filtroIstitutoId, setFiltroIstitutoId] = useState<string | null>(null);
   const [filtroTipologia, setFiltroTipologia] = useState<TipologiaConto | null>(null);
   const [filtroTag, setFiltroTag] = useState<string | null>(null);
+  const [filtroCategoriaId, setFiltroCategoriaId] = useState<string | null>(null);
 
   const numFiltriAttivi =
-    (filtroTipo ? 1 : 0) + (filtroIstitutoId ? 1 : 0) + (filtroTipologia ? 1 : 0) + (filtroTag ? 1 : 0);
+    (filtroTipo ? 1 : 0) + (filtroIstitutoId ? 1 : 0) + (filtroTipologia ? 1 : 0) + (filtroTag ? 1 : 0) +
+    (filtroCategoriaId ? 1 : 0);
 
   const azzeraFiltri = () => {
     setFiltroTipo(null);
     setFiltroIstitutoId(null);
     setFiltroTipologia(null);
     setFiltroTag(null);
+    setFiltroCategoriaId(null);
   };
 
   const tagDisponibili = useMemo(() => {
@@ -112,6 +119,9 @@ export default function TransazioniScreen() {
     if (filtroTag) {
       risultato = risultato.filter((tr) => tr.tag === filtroTag);
     }
+    if (filtroCategoriaId) {
+      risultato = risultato.filter((tr) => tr.categoriaId === filtroCategoriaId);
+    }
 
     if (cerca.trim()) {
       const q = cerca.trim().toLowerCase();
@@ -127,7 +137,7 @@ export default function TransazioniScreen() {
     }
 
     return risultato;
-  }, [transazioniOrdinate, cerca, categorie, filtroTipo, filtroIstitutoId, filtroTipologia, filtroTag]);
+  }, [transazioniOrdinate, cerca, categorie, filtroTipo, filtroIstitutoId, filtroTipologia, filtroTag, filtroCategoriaId]);
 
   const apriNuova = () => {
     setTransazioneSelezionata(undefined);
@@ -214,7 +224,7 @@ export default function TransazioniScreen() {
           </View>
           <PressableScale
             style={[stili.btnFiltri, numFiltriAttivi > 0 && stili.btnFiltriAttivo]}
-            onPress={() => setModaleFiltri(true)}
+            onPress={() => { setModaleFiltri(true); segnaSuggerimentoVisto('filtri-movimenti'); }}
             {...suggerimento('Filtri avanzati')}
           >
             <Ionicons
@@ -226,6 +236,9 @@ export default function TransazioniScreen() {
               <View style={stili.badgeFiltri}>
                 <Text style={stili.testoBadgeFiltri}>{numFiltriAttivi}</Text>
               </View>
+            )}
+            {numFiltriAttivi === 0 && !suggerimentoFiltriVisto && (
+              <View style={stili.puntinoNovita} />
             )}
           </PressableScale>
           <PressableScale
@@ -242,6 +255,10 @@ export default function TransazioniScreen() {
           </PressableScale>
         </View>
       </FadeInView>
+
+      {transazioniVisibili.length > 0 && (
+        <SuggerimentoNovita chiave="dettaglio-transazione" testo="Tocca una transazione per vedere i dettagli" icona="hand-left-outline" />
+      )}
 
       <FlatList
         data={transazioniVisibili}
@@ -261,9 +278,10 @@ export default function TransazioniScreen() {
             messaggio={
               cerca.trim()
                 ? `Nessun risultato per "${cerca}".`
-                : `Nessuna transazione in questo periodo.\nPremi + per aggiungerne una.`
+                : 'Nessuna transazione in questo periodo.'
             }
             icona="receipt-outline"
+            {...(!cerca.trim() && { azioneLabel: 'Aggiungi transazione', onAzione: apriNuova })}
           />
         }
         contentContainerStyle={
@@ -354,6 +372,29 @@ export default function TransazioniScreen() {
                       onPress={() => setFiltroIstitutoId(ist.id)}
                     >
                       <Text style={[stili.testoChip, filtroIstitutoId === ist.id && stili.testoChipAttivo]}>{ist.nome}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {categorie.length > 0 && (
+              <>
+                <Text style={stili.etichettaFiltro}>Categoria</Text>
+                <View style={stili.rigaChip}>
+                  <TouchableOpacity
+                    style={[stili.chip, filtroCategoriaId === null && stili.chipAttivo]}
+                    onPress={() => setFiltroCategoriaId(null)}
+                  >
+                    <Text style={[stili.testoChip, filtroCategoriaId === null && stili.testoChipAttivo]}>Tutte</Text>
+                  </TouchableOpacity>
+                  {categorie.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[stili.chip, filtroCategoriaId === cat.id && stili.chipAttivo]}
+                      onPress={() => setFiltroCategoriaId(cat.id)}
+                    >
+                      <Text style={[stili.testoChip, filtroCategoriaId === cat.id && stili.testoChipAttivo]}>{cat.nome}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -515,6 +556,17 @@ function creaStili(t: Tema) {
     },
     btnFiltriAttivo: {
       backgroundColor: t.primario,
+    },
+    puntinoNovita: {
+      position: 'absolute',
+      top: 2,
+      right: 2,
+      width: 9,
+      height: 9,
+      borderRadius: 4.5,
+      backgroundColor: t.arancio,
+      borderWidth: 1.5,
+      borderColor: t.carta,
     },
     badgeFiltri: {
       position: 'absolute',

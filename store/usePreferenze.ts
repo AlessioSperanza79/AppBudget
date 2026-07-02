@@ -9,6 +9,8 @@ interface PreferenzeState {
   setTema: (t: PreferenzaTema) => void;
   tourCompletato: boolean;
   setTourCompletato: (v: boolean) => void;
+  suggerimentiVisti: Record<string, boolean>;
+  segnaSuggerimentoVisto: (chiave: string) => void;
 }
 
 export const usePreferenze = create<PreferenzeState>()(
@@ -18,6 +20,9 @@ export const usePreferenze = create<PreferenzeState>()(
       setTema: (tema) => set({ tema }),
       tourCompletato: false,
       setTourCompletato: (tourCompletato) => set({ tourCompletato }),
+      suggerimentiVisti: {},
+      segnaSuggerimentoVisto: (chiave) =>
+        set((s) => ({ suggerimentiVisti: { ...s.suggerimentiVisti, [chiave]: true } })),
     }),
     {
       name: 'preferenze-app',

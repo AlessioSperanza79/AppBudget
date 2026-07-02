@@ -55,6 +55,14 @@ export default function CategorieScreen() {
     return mappa;
   }, [transazioni]);
 
+  // Percentuale di giorni trascorsi nel mese corrente, per confrontare il passo di spesa
+  // con il passo atteso (es. "sei al 60% del budget ma è già passato l'80% del mese")
+  const percGiorniMese = useMemo(() => {
+    const ora = new Date();
+    const giorniTotali = new Date(ora.getFullYear(), ora.getMonth() + 1, 0).getDate();
+    return (ora.getDate() / giorniTotali) * 100;
+  }, []);
+
   const apriNuovaCategoria = () => {
     setCategoriaInModifica(undefined);
     setNomeCategoria('');
@@ -131,7 +139,11 @@ export default function CategorieScreen() {
                   </View>
                   <View style={stili.budgetBarraSfondo}>
                     <View style={[stili.budgetBarra, { width: `${perc}%` as `${number}%`, backgroundColor: coloreBarra }]} />
+                    <View style={[stili.budgetMarker, { left: `${percGiorniMese}%` as `${number}%` }]} />
                   </View>
+                  {perc >= percGiorniMese + 15 && (
+                    <Text style={stili.budgetHintPasso}>Stai spendendo più veloce del previsto</Text>
+                  )}
                 </View>
               )}
             </View>
@@ -302,11 +314,28 @@ function creaStili(t: Tema) {
       height: 6,
       borderRadius: 3,
       backgroundColor: t.bordoSottile,
-      overflow: 'hidden',
+      overflow: 'visible',
     },
     budgetBarra: {
       height: 6,
       borderRadius: 3,
+    },
+    // Marker verticale che indica quanti giorni del mese sono già trascorsi, per confrontare
+    // il passo di spesa reale con quello atteso
+    budgetMarker: {
+      position: 'absolute',
+      top: -2,
+      width: 2,
+      height: 10,
+      borderRadius: 1,
+      backgroundColor: t.titolo,
+      opacity: 0.4,
+    },
+    budgetHintPasso: {
+      fontSize: 11,
+      color: t.arancio,
+      fontWeight: '600',
+      marginTop: 4,
     },
     avatarCategoria: {
       width: 36,

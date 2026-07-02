@@ -1,7 +1,8 @@
 // Dialog di conferma (es. eliminazioni) basato su BottomSheet, per uniformare i vari "Sei sicuro?" dell'app
-import { useMemo } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo } from 'react';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import BottomSheet from './BottomSheet';
 import { useTema, Tema } from '../constants/tema';
 
@@ -27,6 +28,19 @@ export default function ConfermaDialog({
   const coloreAccento = pericoloso ? t.uscita : t.primario;
   const sfondoAccento = pericoloso ? t.uscitaSfondo : t.primarioSfondo;
 
+  // Un piccolo scatto tattile quando compare una conferma "pericolosa" (es. elimina),
+  // per far percepire il peso dell'azione senza dover leggere il testo
+  useEffect(() => {
+    if (visibile && pericoloso && Platform.OS !== 'web') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    }
+  }, [visibile, pericoloso]);
+
+  const confermaConAptico = () => {
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onConferma?.();
+  };
+
   return (
     <BottomSheet visibile={visibile} onChiudi={onChiudi}>
       <View style={stili.contenuto}>
@@ -46,7 +60,7 @@ export default function ConfermaDialog({
           {onConferma && (
             <TouchableOpacity
               style={[stili.btnConferma, { backgroundColor: coloreAccento }]}
-              onPress={onConferma}
+              onPress={confermaConAptico}
             >
               <Text style={stili.testoConferma}>{testoConferma}</Text>
             </TouchableOpacity>

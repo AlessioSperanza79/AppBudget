@@ -117,8 +117,10 @@ export default function RicorrentiVista() {
 
         {ricorrenti.length === 0 ? (
           <EmptyState
-            messaggio={"Nessun modello ricorrente.\nPremi + per aggiungerne uno.\n\nUsa il toggle «Ricorrente» nel form."}
+            messaggio={"Nessun modello ricorrente.\n\nUsa il toggle «Ricorrente» nel form."}
             icona="repeat-outline"
+            azioneLabel="Aggiungi ricorrenza"
+            onAzione={() => { setTransazioneSelezionata(undefined); setModaleVisibile(true); }}
           />
         ) : (
           <View style={{ marginBottom: 16 }}>

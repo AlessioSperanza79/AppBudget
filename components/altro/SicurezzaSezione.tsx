@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useSicurezza } from '../../store/useSicurezza';
 import { useTema, Tema } from '../../constants/tema';
@@ -59,11 +60,13 @@ export default function SicurezzaSezione() {
   };
 
   const gestisciToggleBlocco = (attivo: boolean) => {
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (attivo) apriImpostaPin();
     else setConfermaDisattiva(true);
   };
 
   const gestisciToggleBiometria = async (attivo: boolean) => {
+    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (!attivo) { setBiometriaAttiva(false); return; }
     // Richiede subito un'autenticazione di prova: se fallisce/annulla, il toggle resta spento
     const esito = await LocalAuthentication.authenticateAsync({

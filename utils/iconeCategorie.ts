@@ -24,6 +24,14 @@ const REGOLE: Array<{ parole: string[]; icona: IconaNome }> = [
   { parole: ['telefono', 'internet', 'abbonamento'],                icona: 'wifi-outline' },
   { parole: ['animale', 'cane', 'gatto', 'veterinario'],            icona: 'paw-outline' },
   { parole: ['regalo', 'regali'],                                   icona: 'gift-outline' },
+  { parole: ['netflix', 'spotify', 'prime', 'disney', 'streaming'], icona: 'play-circle-outline' },
+  { parole: ['tasse', 'tributi', 'imu', 'irpef', 'commercialista'], icona: 'document-text-outline' },
+  { parole: ['bellezza', 'parrucchiere', 'estetista', 'barbiere'],  icona: 'cut-outline' },
+  { parole: ['elettronica', 'tecnologia', 'informatica', 'pc', 'computer'], icona: 'hardware-chip-outline' },
+  { parole: ['bambin', 'figli', 'asilo', 'giocattol'],              icona: 'happy-outline' },
+  { parole: ['beneficenza', 'donazione', 'offerta'],                icona: 'heart-outline' },
+  { parole: ['arredamento', 'mobili', 'bricolage'],                 icona: 'construct-outline' },
+  { parole: ['tabacco', 'sigarette'],                               icona: 'flame-outline' },
 ];
 
 const ICONA_PREDEFINITA: IconaNome = 'pricetag-outline';
