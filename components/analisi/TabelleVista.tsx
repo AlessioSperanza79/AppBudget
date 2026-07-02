@@ -1,9 +1,7 @@
 // ── Vista "Tabelle" della schermata Analisi: drill-down per categoria/istituto ──
 import { useState, useMemo, useEffect } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity,
-  Modal, FlatList, StyleSheet, TextInput, Platform, RefreshControl,
-} from 'react-native';
+import { View, ScrollView, TouchableOpacity, Modal, FlatList, StyleSheet, TextInput, Platform, RefreshControl } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { Categoria, Istituto, Transazione } from '../../types';
 import { formatEuro } from '../../utils/formatters';
@@ -704,7 +702,7 @@ function creaStili(t: Tema) {
     },
     card: {
       flex: 1,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 12,
       alignItems: 'center',
       gap: 4,
@@ -802,7 +800,7 @@ function creaStili(t: Tema) {
     },
     tabella: {
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       overflow: 'hidden',
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },
@@ -910,7 +908,7 @@ function creaStili(t: Tema) {
     btnChiudiModal: {
       width: 32,
       height: 32,
-      borderRadius: 16,
+      borderRadius: 18,
       backgroundColor: t.superfice,
       justifyContent: 'center',
       alignItems: 'center',
@@ -993,7 +991,7 @@ function creaStiliTabella(t: Tema) {
     },
     tabella: {
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       overflow: 'hidden',
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },

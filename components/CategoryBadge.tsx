@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Text from './TestoBase';
 import { useTema, Tema } from '../constants/tema';
 
 interface Props {

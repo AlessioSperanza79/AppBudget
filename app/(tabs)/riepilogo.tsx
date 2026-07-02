@@ -2,17 +2,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps, useMemo, useState } from 'react';
-import {
-  Platform,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import Text from '../../components/TestoBase';
 import { LineChart } from 'react-native-gifted-charts';
 import BottomSheet from '../../components/BottomSheet';
 import CountUpText from '../../components/CountUpText';
@@ -20,7 +11,7 @@ import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import SuggerimentoNovita from '../../components/SuggerimentoNovita';
 import TransactionForm from '../../components/TransactionForm';
-import { Tema, useTema } from '../../constants/tema';
+import { Tema, useTema, FONT_ESPRESSIVO } from '../../constants/tema';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
 import { Categoria, Istituto, Transazione, TipologiaConto } from '../../types';
@@ -903,6 +894,7 @@ function creaStili(t: Tema) {
       color: '#FFF',
       fontSize: 46,
       fontWeight: '800',
+      fontFamily: FONT_ESPRESSIVO,
       letterSpacing: -1.5,
       marginTop: 4,
     },
@@ -914,7 +906,7 @@ function creaStili(t: Tema) {
       marginTop: 10,
       paddingHorizontal: 10,
       paddingVertical: 5,
-      borderRadius: 20,
+      borderRadius: 24,
       backgroundColor: 'rgba(255,255,255,0.18)',
     },
     testoVariazione: {
@@ -952,6 +944,7 @@ function creaStili(t: Tema) {
       color: '#FFF',
       fontSize: 17,
       fontWeight: '700',
+      fontFamily: FONT_ESPRESSIVO,
     },
 
     // ── Cruscotto flusso ──
@@ -959,7 +952,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       marginHorizontal: 16,
       marginBottom: 8,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },
@@ -1067,7 +1060,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       marginHorizontal: 16,
       marginBottom: 8,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },
@@ -1087,7 +1080,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       marginHorizontal: 16,
       marginBottom: 8,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },
@@ -1160,7 +1153,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       marginHorizontal: 16,
       marginVertical: 4,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },
@@ -1171,7 +1164,7 @@ function creaStili(t: Tema) {
     avatarGruppo: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: 24,
       justifyContent: 'center',
       alignItems: 'center',
       flexShrink: 0,

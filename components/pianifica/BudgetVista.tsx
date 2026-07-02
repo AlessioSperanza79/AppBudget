@@ -1,6 +1,7 @@
 // ── Vista "Budget" della schermata Pianifica: piano mensile a somma zero con rollover ──
 import { useMemo, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform, RefreshControl } from 'react-native';
+import { View, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform, RefreshControl } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Transazione } from '../../types';
@@ -9,7 +10,7 @@ import { iconaCategoria } from '../../utils/iconeCategorie';
 import EmptyState from '../EmptyState';
 import PressableScale from '../PressableScale';
 import BottomSheet from '../BottomSheet';
-import { useTema, Tema } from '../../constants/tema';
+import { useTema, Tema, FONT_ESPRESSIVO } from '../../constants/tema';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
@@ -270,7 +271,7 @@ function creaStili(t: Tema) {
     cardAssegnare: {
       margin: 16,
       marginBottom: 4,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 20,
       alignItems: 'center',
       gap: 4,
@@ -284,6 +285,7 @@ function creaStili(t: Tema) {
     importoAssegnare: {
       fontSize: 30,
       fontWeight: '800',
+      fontFamily: FONT_ESPRESSIVO,
     },
     dettaglioAssegnare: {
       fontSize: 12,
@@ -294,7 +296,7 @@ function creaStili(t: Tema) {
     // ── Righe categoria ──
     riga: {
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       marginBottom: 8,
       shadowColor: t.ombra,

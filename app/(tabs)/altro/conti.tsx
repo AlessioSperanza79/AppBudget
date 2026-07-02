@@ -1,9 +1,7 @@
 // ── Sotto-schermata "Conti & Istituti": CRUD conti/banche collegati alle transazioni ──
 import { useState, useMemo } from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Platform, KeyboardAvoidingView, RefreshControl,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView, RefreshControl } from 'react-native';
+import Text from '../../../components/TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../../store/useFinanceStore';
 import { Istituto } from '../../../types';
@@ -161,7 +159,7 @@ function creaStili(t: Tema) {
       alignItems: 'center',
       gap: 10,
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       marginBottom: 8,
       shadowColor: t.ombra,

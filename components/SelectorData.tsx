@@ -1,6 +1,7 @@
 // Versione NATIVA (Android / iOS) — usa il calendario di sistema
 import { useState } from 'react';
-import { TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import Text from './TestoBase';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { formatData } from '../utils/formatters';
 

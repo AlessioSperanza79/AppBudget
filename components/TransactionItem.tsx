@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import { Transazione, Categoria, Istituto, TipologiaConto } from '../types';
 import { formatEuro, formatData } from '../utils/formatters';
 import { iconaCategoria } from '../utils/iconeCategorie';
-import { useTema, Tema } from '../constants/tema';
+import { useTema, Tema, FONT_ESPRESSIVO } from '../constants/tema';
 import BottomSheet from './BottomSheet';
 
 const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = {
@@ -204,7 +205,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       marginHorizontal: 16,
       marginVertical: 4,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       gap: 12,
       shadowColor: t.ombra,
@@ -244,7 +245,7 @@ function creaStili(t: Tema) {
     },
     btnSwipe: {
       width: 52,
-      borderRadius: 16,
+      borderRadius: 18,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -275,6 +276,7 @@ function creaStili(t: Tema) {
     importoModal: {
       fontSize: 26,
       fontWeight: '700',
+      fontFamily: FONT_ESPRESSIVO,
       letterSpacing: -0.5,
       marginTop: 4,
     },

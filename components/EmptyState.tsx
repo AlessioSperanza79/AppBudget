@@ -1,5 +1,6 @@
-import { useMemo, ComponentProps } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useMemo, ComponentProps, ReactNode } from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useTema, Tema } from '../constants/tema';
 
@@ -10,17 +11,22 @@ interface Props {
   icona?: IoniconName;
   azioneLabel?: string;
   onAzione?: () => void;
+  illustrazione?: ReactNode;
 }
 
-export default function EmptyState({ messaggio, icona = 'document-text-outline', azioneLabel, onAzione }: Props) {
+export default function EmptyState({ messaggio, icona = 'document-text-outline', azioneLabel, onAzione, illustrazione }: Props) {
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
 
   return (
     <View style={stili.contenitore}>
-      <View style={stili.cerchio}>
-        <Ionicons name={icona} size={32} color={t.piuSottile} />
-      </View>
+      {illustrazione ?? (
+        <View style={stili.cerchioEsterno}>
+          <View style={stili.cerchio}>
+            <Ionicons name={icona} size={30} color={t.primario} />
+          </View>
+        </View>
+      )}
       <Text style={stili.testo}>{messaggio}</Text>
       {azioneLabel && onAzione && (
         <TouchableOpacity style={stili.btnAzione} onPress={onAzione}>
@@ -39,15 +45,23 @@ function creaStili(t: Tema) {
       justifyContent: 'center',
       alignItems: 'center',
       padding: 40,
-      gap: 16,
+      gap: 18,
+    },
+    // Doppio strato: un cerchio grande e tenue dietro uno più piccolo e pieno, per un
+    // effetto "adesivo morbido" più caldo del singolo cerchio piatto di prima
+    cerchioEsterno: {
+      width: 92,
+      height: 92,
+      borderRadius: 46,
+      backgroundColor: t.superfice,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     cerchio: {
-      width: 72,
-      height: 72,
-      borderRadius: 36,
-      backgroundColor: t.superfice,
-      borderWidth: 1,
-      borderColor: t.bordo,
+      width: 64,
+      height: 64,
+      borderRadius: 32,
+      backgroundColor: t.primarioSfondo,
       justifyContent: 'center',
       alignItems: 'center',
     },

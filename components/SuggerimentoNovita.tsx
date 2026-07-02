@@ -1,6 +1,7 @@
 // ── Banner "Novità" dismissibile: evidenzia una funzione senza costruire un vero overlay-spotlight ──
 import { useMemo, ComponentProps } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { usePreferenze } from '../store/usePreferenze';
 import { useTema, Tema } from '../constants/tema';

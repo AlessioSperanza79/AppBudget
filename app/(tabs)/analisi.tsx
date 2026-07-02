@@ -1,6 +1,7 @@
 // ── Schermata Analisi: wrapper con toggle Grafici/Tabelle + periodo Mensile/Annuale ──
 import { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Text from '../../components/TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { formatEuro } from '../../utils/formatters';
@@ -270,7 +271,7 @@ function creaStili(t: Tema) {
     },
     card: {
       flex: 1,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 12,
       alignItems: 'center',
       gap: 4,

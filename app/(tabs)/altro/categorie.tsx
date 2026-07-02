@@ -1,9 +1,7 @@
 // ── Sotto-schermata "Categorie": CRUD categorie con budget mensile ──
 import { useState, useMemo } from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Platform, KeyboardAvoidingView, ScrollView, RefreshControl,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform, KeyboardAvoidingView, ScrollView, RefreshControl } from 'react-native';
+import Text from '../../../components/TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../../store/useFinanceStore';
 import { Categoria, TipoCategoria } from '../../../types';
@@ -274,7 +272,7 @@ function creaStili(t: Tema) {
     // ── Lista ──
     riga: {
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       marginBottom: 8,
       shadowColor: t.ombra,

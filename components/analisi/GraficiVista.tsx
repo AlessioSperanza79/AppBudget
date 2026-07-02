@@ -1,6 +1,7 @@
 // ── Vista "Grafici" della schermata Analisi: torta + linee + barre ──
 import { useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, useWindowDimensions, RefreshControl } from 'react-native';
+import { View, ScrollView, StyleSheet, Platform, useWindowDimensions, RefreshControl } from 'react-native';
+import Text from '../TestoBase';
 import { BarChart, PieChart, LineChart } from 'react-native-gifted-charts';
 import { Tema } from '../../constants/tema';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
@@ -523,7 +524,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       margin: 16,
       marginBottom: 0,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 20,
       shadowColor: t.ombra,
       shadowOffset: { width: 0, height: 2 },

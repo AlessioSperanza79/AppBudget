@@ -1,6 +1,7 @@
 // ── Bottone + flusso "Importa CSV": legge un file, mostra un'anteprima e conferma l'inserimento ──
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { parseCsvTransazioni, RigaCsvParsata } from '../../utils/importCsv';

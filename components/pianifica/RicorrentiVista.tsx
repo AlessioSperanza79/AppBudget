@@ -1,8 +1,7 @@
 // ── Vista "Ricorrenti" della schermata Pianifica: modelli ricorrenti e applicazione mensile ──
 import { useState, useMemo } from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, RefreshControl,
-} from 'react-native';
+import { View, ScrollView, TouchableOpacity, StyleSheet, Platform, RefreshControl } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Transazione } from '../../types';
@@ -254,7 +253,7 @@ function creaStili(t: Tema) {
     },
     cardRiepilogo: {
       flex: 1,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       gap: 6,
     },
@@ -288,7 +287,7 @@ function creaStili(t: Tema) {
     cardApplica: {
       backgroundColor: t.carta,
       margin: 16,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       gap: 14,
       shadowColor: t.ombra,
@@ -305,7 +304,7 @@ function creaStili(t: Tema) {
     cerchioApplicaIcon: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: 24,
       backgroundColor: t.primarioSfondo,
       justifyContent: 'center',
       alignItems: 'center',

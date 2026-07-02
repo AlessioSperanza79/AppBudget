@@ -1,11 +1,13 @@
 // ── Schermata principale: lista transazioni filtrata per periodo ──
 import { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, TextInput, Platform, RefreshControl } from 'react-native';
+import { View, FlatList, TouchableOpacity, ScrollView, StyleSheet, TextInput, Platform, RefreshControl } from 'react-native';
+import Text from '../../components/TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import TransactionItem from '../../components/TransactionItem';
 import TransactionForm from '../../components/TransactionForm';
 import EmptyState from '../../components/EmptyState';
+import IllustrazioneMovimenti from '../../components/illustrazioni/IllustrazioneMovimenti';
 import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import BottomSheet from '../../components/BottomSheet';
@@ -301,6 +303,7 @@ export default function TransazioniScreen() {
                 : 'Nessuna transazione in questo periodo.'
             }
             icona="receipt-outline"
+            illustrazione={!cerca.trim() ? <IllustrazioneMovimenti t={t} /> : undefined}
             {...(!cerca.trim() && { azioneLabel: 'Aggiungi transazione', onAzione: apriNuova })}
           />
         }
@@ -569,7 +572,7 @@ function creaStili(t: Tema) {
       alignItems: 'center',
       gap: 5,
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       paddingVertical: 6,
       paddingHorizontal: 12,
       marginRight: 8,

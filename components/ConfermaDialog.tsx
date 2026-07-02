@@ -1,6 +1,7 @@
 // Dialog di conferma (es. eliminazioni) basato su BottomSheet, per uniformare i vari "Sei sicuro?" dell'app
 import { useEffect, useMemo } from 'react';
-import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import BottomSheet from './BottomSheet';

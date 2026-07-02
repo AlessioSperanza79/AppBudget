@@ -1,6 +1,7 @@
 // ── Sezione "Sicurezza" della schermata Altro: blocco con PIN e sblocco biometrico ──
 import { useEffect, useMemo, useState } from 'react';
-import { Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Platform, StyleSheet, Switch, TextInput, TouchableOpacity, View } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -161,7 +162,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       margin: 16,
       marginBottom: 4,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       gap: 14,
       shadowColor: t.ombra,

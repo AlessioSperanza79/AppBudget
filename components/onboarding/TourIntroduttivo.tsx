@@ -1,6 +1,7 @@
 // ── Tour introduttivo: spiega le schede principali dell'app al primo avvio (o su richiesta da "Aiuto") ──
 import { useEffect, useRef, useState } from 'react';
-import { PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { PanResponder, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import FadeInView from '../FadeInView';
@@ -259,7 +260,7 @@ function creaStili(t: Tema) {
     },
     btnAvanti: {
       width: '100%',
-      borderRadius: 16,
+      borderRadius: 18,
       paddingVertical: 16,
       alignItems: 'center',
     },

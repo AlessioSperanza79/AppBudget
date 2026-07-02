@@ -1,6 +1,7 @@
 // Anima la transizione di un valore numerico, riformattandolo ad ogni frame (es. con formatEuro)
 import { useEffect, useRef, useState } from 'react';
-import { Animated, StyleProp, Text, TextProps, TextStyle } from 'react-native';
+import { Animated, StyleProp, TextProps, TextStyle } from 'react-native';
+import Text from './TestoBase';
 
 interface ProprietaCountUpText extends Omit<TextProps, 'style' | 'children'> {
   valore: number;

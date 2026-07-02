@@ -1,6 +1,7 @@
 // ── Sezione "Notifiche" della schermata Altro: avvisi di budget e promemoria ricorrenti ──
 import { useMemo, useState } from 'react';
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
+import Text from '../TestoBase';
 import { useNotifiche } from '../../store/useNotifiche';
 import { annullaTutteLeNotifiche, notificheSupportate, richiediPermessiNotifiche } from '../../utils/notifiche';
 import { useTema, Tema } from '../../constants/tema';
@@ -57,7 +58,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       margin: 16,
       marginBottom: 4,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       gap: 14,
       shadowColor: t.ombra,

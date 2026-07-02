@@ -1,9 +1,7 @@
 // ── Vista "Obiettivi" della schermata Pianifica: salvadanai virtuali con barra di avanzamento ──
 import { useState, useMemo } from 'react';
-import {
-  View, Text, FlatList, TouchableOpacity, TextInput,
-  ScrollView, KeyboardAvoidingView, StyleSheet, Platform, RefreshControl,
-} from 'react-native';
+import { View, FlatList, TouchableOpacity, TextInput, ScrollView, KeyboardAvoidingView, StyleSheet, Platform, RefreshControl } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Obiettivo } from '../../types';
@@ -11,6 +9,7 @@ import { useTema, Tema } from '../../constants/tema';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { formatEuro, formatData } from '../../utils/formatters';
 import EmptyState from '../../components/EmptyState';
+import IllustrazioneObiettivo from '../../components/illustrazioni/IllustrazioneObiettivo';
 import PressableScale from '../../components/PressableScale';
 import SelectorData from '../../components/SelectorData';
 import BottomSheet from '../../components/BottomSheet';
@@ -141,6 +140,7 @@ export default function ObiettiviVista() {
           <EmptyState
             icona="flag-outline"
             messaggio={'Nessun obiettivo di risparmio.\nCreane uno per iniziare ad accantonare.'}
+            illustrazione={<IllustrazioneObiettivo t={t} />}
             azioneLabel="Aggiungi obiettivo"
             onAzione={apriNuovoObiettivo}
           />
@@ -357,7 +357,7 @@ function creaStili(t: Tema) {
     // ── Lista ──
     riga: {
       backgroundColor: t.carta,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 14,
       marginBottom: 8,
       shadowColor: t.ombra,

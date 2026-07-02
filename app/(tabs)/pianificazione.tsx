@@ -1,6 +1,7 @@
 // ── Schermata Pianifica: wrapper con toggle Ricorrenti/Obiettivi ──
 import { useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Text from '../../components/TestoBase';
 import RicorrentiVista from '../../components/pianifica/RicorrentiVista';
 import ObiettiviVista from '../../components/pianifica/ObiettiviVista';
 import BudgetVista from '../../components/pianifica/BudgetVista';

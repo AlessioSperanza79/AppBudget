@@ -1,6 +1,7 @@
 // ── Sezione "Impostazioni" della schermata Altro: tema + backup ──
 import { useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
@@ -68,7 +69,7 @@ function creaStili(t: Tema) {
       backgroundColor: t.carta,
       margin: 16,
       marginBottom: 4,
-      borderRadius: 20,
+      borderRadius: 24,
       padding: 18,
       gap: 14,
       shadowColor: t.ombra,

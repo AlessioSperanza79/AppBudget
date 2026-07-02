@@ -1,6 +1,7 @@
 // ── Hub della tab Altro: elenco di voci verso le sotto-schermate di impostazione ──
 import { useMemo, useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import Text from '../../../components/TestoBase';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import PressableScale from '../../../components/PressableScale';
@@ -70,7 +71,7 @@ function creaStili(t: Tema) {
     cerchioIcona: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: 24,
       backgroundColor: t.primarioSfondo,
       alignItems: 'center',
       justifyContent: 'center',

@@ -1,10 +1,11 @@
 // ── Schermata di blocco a PIN/biometria mostrata sopra tutta l'app quando è attiva ──
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useSicurezza } from '../store/useSicurezza';
-import { useTema, Tema } from '../constants/tema';
+import { useTema, Tema, FONT_ESPRESSIVO } from '../constants/tema';
 
 const LUNGHEZZA_PIN = 4;
 // '' → riservato al tasto biometria (o vuoto), 'backspace' → cancella l'ultima cifra
@@ -233,6 +234,7 @@ function creaStili(t: Tema) {
     testoTasto: {
       fontSize: 24,
       fontWeight: '600',
+      fontFamily: FONT_ESPRESSIVO,
       color: t.titolo,
     },
   });

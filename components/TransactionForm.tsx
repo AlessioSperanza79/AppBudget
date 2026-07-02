@@ -1,9 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity,
-  ScrollView, Alert, KeyboardAvoidingView,
-  StyleSheet, Platform,
-} from 'react-native';
+import { View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, StyleSheet, Platform } from 'react-native';
+import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { Transazione, Categoria, Istituto, TipoTransazione, TipologiaConto } from '../types';
 import { oggiIso } from '../utils/formatters';
@@ -332,7 +329,7 @@ function creaStili(t: Tema) {
     btnChiudi: {
       width: 32,
       height: 32,
-      borderRadius: 16,
+      borderRadius: 18,
       backgroundColor: t.superfice,
       borderWidth: 1,
       borderColor: t.bordo,
@@ -348,7 +345,7 @@ function creaStili(t: Tema) {
     // ── Area importo ──
     areaImporto: {
       backgroundColor: t.carta,
-      borderRadius: 20,
+      borderRadius: 24,
       borderWidth: 1.5,
       paddingVertical: 24,
       paddingHorizontal: 20,
@@ -515,7 +512,7 @@ function creaStili(t: Tema) {
     // ── Pulsante salva ──
     btnSalva: {
       margin: 20,
-      borderRadius: 16,
+      borderRadius: 18,
       padding: 17,
       alignItems: 'center',
       shadowColor: t.ombra,
