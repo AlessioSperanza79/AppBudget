@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, StyleSheet, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, ScrollView, Alert, KeyboardAvoidingView, StyleSheet, Platform, Image } from 'react-native';
 import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { Transazione, Categoria, Istituto, TipoTransazione, TipologiaConto } from '../types';
 import { oggiIso } from '../utils/formatters';
 import { iconaCategoria } from '../utils/iconeCategorie';
@@ -17,6 +18,7 @@ interface Props {
     importo: number; data: string; nota?: string; tag?: string;
     istitutoOrigineId: string; istitutoDestinazioneId: string;
   }) => void;
+  onCaricaFoto?: (uri: string) => Promise<string | undefined>;
   transazioneEsistente?: Transazione;
   categorie: Categoria[];
   istituti: Istituto[];
@@ -34,7 +36,7 @@ const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = 
 };
 
 export default function TransactionForm({
-  visibile, onChiudi, onSalva, onSalvaTrasferimento, transazioneEsistente, categorie, istituti, forzaRicorrente,
+  visibile, onChiudi, onSalva, onSalvaTrasferimento, onCaricaFoto, transazioneEsistente, categorie, istituti, forzaRicorrente,
 }: Props) {
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -57,6 +59,11 @@ export default function TransactionForm({
   const [istitutoDestinazioneId, setIstitutoDestinazioneId] = useState<string | undefined>();
   const trasferimentoDisponibile = !!onSalvaTrasferimento && !forzaRicorrente && !transazioneEsistente && istituti.length >= 2;
 
+  // Foto scontrino: fotoUri può essere un URL già caricato (in modifica) o un percorso
+  // locale appena scelto/scattato, caricato su Supabase solo al salvataggio
+  const [fotoUri, setFotoUri]           = useState<string | undefined>();
+  const [caricamentoFoto, setCaricamentoFoto] = useState(false);
+
   const dataFineDefault = (): string => {
     const d = new Date();
     d.setFullYear(d.getFullYear() + 1);
@@ -78,10 +85,29 @@ export default function TransactionForm({
       setTrasferimento(false);
       setIstitutoOrigineId(undefined);
       setIstitutoDestinazioneId(undefined);
+      setFotoUri(transazioneEsistente?.fotoUrl);
     }
   }, [visibile, transazioneEsistente]);
 
-  const gestisciSalva = () => {
+  const scegliFoto = async (daFotocamera: boolean) => {
+    const permesso = daFotocamera
+      ? await ImagePicker.requestCameraPermissionsAsync()
+      : await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permesso.granted) {
+      Alert.alert('Permesso negato', daFotocamera
+        ? 'Serve il permesso fotocamera per scattare la foto dello scontrino.'
+        : 'Serve il permesso galleria per scegliere la foto dello scontrino.');
+      return;
+    }
+    const risultato = daFotocamera
+      ? await ImagePicker.launchCameraAsync({ quality: 0.6, allowsEditing: true })
+      : await ImagePicker.launchImageLibraryAsync({ quality: 0.6, allowsEditing: true });
+    if (!risultato.canceled && risultato.assets[0]) {
+      setFotoUri(risultato.assets[0].uri);
+    }
+  };
+
+  const gestisciSalva = async () => {
     const importoNum = parseFloat(importo.replace(',', '.'));
     if (isNaN(importoNum) || importoNum <= 0) {
       Alert.alert('Importo non valido', 'Inserisci un numero maggiore di zero.');
@@ -111,6 +137,20 @@ export default function TransactionForm({
       Alert.alert('Categoria mancante', 'Seleziona una categoria.');
       return;
     }
+
+    // Se la foto è un percorso locale (appena scelta/scattata, non ancora un URL) va
+    // caricata su Supabase prima di salvare la transazione
+    let fotoUrlFinale = fotoUri;
+    if (fotoUri && !fotoUri.startsWith('http') && onCaricaFoto) {
+      setCaricamentoFoto(true);
+      fotoUrlFinale = await onCaricaFoto(fotoUri);
+      setCaricamentoFoto(false);
+      if (!fotoUrlFinale) {
+        Alert.alert('Foto non caricata', 'Non sono riuscito a caricare la foto. Riprova o salva senza foto.');
+        return;
+      }
+    }
+
     onSalva({
       importo: importoNum, tipo, categoriaId, data,
       nota: nota.trim() || undefined,
@@ -119,6 +159,7 @@ export default function TransactionForm({
       istitutoId,
       ricorrente: ricorrente || undefined,
       dataFine: ((ricorrente || forzaRicorrente) && dataFine) ? dataFine : undefined,
+      fotoUrl: fotoUrlFinale,
     });
     onChiudi();
   };
@@ -355,6 +396,32 @@ export default function TransactionForm({
             autoCapitalize="none"
           />
 
+          {/* ── Foto scontrino ── */}
+          {!!onCaricaFoto && !trasferimento && (
+            <>
+              <Text style={stili.etichetta}>Foto scontrino (facoltativa)</Text>
+              {fotoUri ? (
+                <View style={stili.anteprimaFotoContenitore}>
+                  <Image source={{ uri: fotoUri }} style={stili.anteprimaFoto} />
+                  <TouchableOpacity style={stili.btnRimuoviFoto} onPress={() => setFotoUri(undefined)} hitSlop={8}>
+                    <Ionicons name="close-circle" size={22} color={t.uscita} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={stili.toggleRiga}>
+                  <TouchableOpacity style={stili.btnToggle} onPress={() => scegliFoto(true)}>
+                    <Ionicons name="camera-outline" size={18} color={t.piuSottile} />
+                    <Text style={stili.testoToggle}>Scatta foto</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={stili.btnToggle} onPress={() => scegliFoto(false)}>
+                    <Ionicons name="images-outline" size={18} color={t.piuSottile} />
+                    <Text style={stili.testoToggle}>Da galleria</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
+
           {/* ── Ricorrente ── */}
           {!forzaRicorrente && !trasferimento && (
             <>
@@ -388,16 +455,19 @@ export default function TransactionForm({
 
         {/* ── Pulsante Salva ── */}
         <TouchableOpacity
-          style={[stili.btnSalva, { backgroundColor: coloreAccento }]}
+          style={[stili.btnSalva, { backgroundColor: coloreAccento }, caricamentoFoto && { opacity: 0.6 }]}
           onPress={gestisciSalva}
           activeOpacity={0.85}
+          disabled={caricamentoFoto}
         >
           <Text style={stili.testoSalva}>
-            {transazioneEsistente
-              ? 'Salva modifiche'
-              : trasferimento
-                ? 'Registra trasferimento'
-                : `Aggiungi ${tipo === 'entrata' ? 'entrata' : 'uscita'}`}
+            {caricamentoFoto
+              ? 'Caricamento foto…'
+              : transazioneEsistente
+                ? 'Salva modifiche'
+                : trasferimento
+                  ? 'Registra trasferimento'
+                  : `Aggiungi ${tipo === 'entrata' ? 'entrata' : 'uscita'}`}
           </Text>
         </TouchableOpacity>
 
@@ -595,6 +665,25 @@ function creaStili(t: Tema) {
       fontSize: 13,
       color: t.sottile,
       fontWeight: '500',
+    },
+
+    // ── Foto scontrino ──
+    anteprimaFotoContenitore: {
+      position: 'relative',
+      alignSelf: 'flex-start',
+    },
+    anteprimaFoto: {
+      width: 96,
+      height: 96,
+      borderRadius: 14,
+      backgroundColor: t.superfice,
+    },
+    btnRimuoviFoto: {
+      position: 'absolute',
+      top: -8,
+      right: -8,
+      backgroundColor: t.carta,
+      borderRadius: 11,
     },
 
     // ── Ricorrente ──

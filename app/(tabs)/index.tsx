@@ -32,7 +32,7 @@ const MESI = [
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 export default function TransazioniScreen() {
-  const { transazioni, categorie, istituti, aggiungiTransazione, modificaTransazione, eliminaTransazione, aggiungiTrasferimento } =
+  const { transazioni, categorie, istituti, aggiungiTransazione, modificaTransazione, eliminaTransazione, aggiungiTrasferimento, caricaFotoScontrino } =
     useFinanceStore();
   const suggerimentoFiltriVisto = usePreferenze((s) => !!s.suggerimentiVisti['filtri-movimenti']);
   const segnaSuggerimentoVisto = usePreferenze((s) => s.segnaSuggerimentoVisto);
@@ -322,6 +322,7 @@ export default function TransazioniScreen() {
         onChiudi={() => setModaleVisibile(false)}
         onSalva={gestisciSalva}
         onSalvaTrasferimento={aggiungiTrasferimento}
+        onCaricaFoto={caricaFotoScontrino}
         transazioneEsistente={transazioneSelezionata}
         categorie={categorie}
         istituti={istituti}

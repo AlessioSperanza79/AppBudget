@@ -54,4 +54,5 @@ export interface Transazione {
   templateId?: string;      // sulle transazioni auto-create: id del modello padre
   trasferimento?: boolean;  // true = una delle due gambe di uno spostamento tra conti
   trasferimentoId?: string; // collega le due transazioni (uscita+entrata) dello stesso spostamento
+  fotoUrl?: string;         // foto dello scontrino, caricata su Supabase Storage (bucket "scontrini")
 }

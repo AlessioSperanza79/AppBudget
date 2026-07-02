@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform, Image } from 'react-native';
 import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import Swipeable, { SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -98,6 +98,10 @@ export default function TransactionItem({
             <View style={stili.chipTag}>
               <Text style={stili.testoTag}>{transazione.tag}</Text>
             </View>
+          ) : null}
+
+          {transazione.fotoUrl ? (
+            <Image source={{ uri: transazione.fotoUrl }} style={stili.fotoScontrino} />
           ) : null}
         </View>
 
@@ -309,6 +313,13 @@ function creaStili(t: Tema) {
       borderRadius: 6,
       paddingHorizontal: 8,
       paddingVertical: 4,
+    },
+    fotoScontrino: {
+      width: '100%',
+      height: 160,
+      borderRadius: 14,
+      backgroundColor: t.superfice,
+      marginTop: 4,
     },
     testoTag: {
       fontSize: 12,

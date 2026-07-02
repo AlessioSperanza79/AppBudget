@@ -26,6 +26,7 @@ interface FinanceState {
   avviaRealtime: () => () => void;
 
   aggiungiTransazione: (t: Omit<Transazione, 'id'>) => Promise<void>;
+  caricaFotoScontrino: (uri: string) => Promise<string | undefined>;
   importaTransazioni: (righe: Omit<Transazione, 'id'>[]) => Promise<void>;
   modificaTransazione: (id: string, aggiornamenti: Partial<Omit<Transazione, 'id'>>) => Promise<void>;
   eliminaTransazione: (id: string) => Promise<void>;
@@ -108,7 +109,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(rollover === true && { rollover: true }),
       })),
       istituti:  istDb.map(({ id, nome }): Istituto => ({ id, nome })),
-      transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id, tag, trasferimento, trasferimento_id }): Transazione => ({
+      transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id, tag, trasferimento, trasferimento_id, foto_url }): Transazione => ({
         id,
         importo: Number(importo),
         tipo,
@@ -123,6 +124,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(tag             != null && { tag }),
         ...(trasferimento   === true && { trasferimento: true }),
         ...(trasferimento_id != null && { trasferimentoId: trasferimento_id }),
+        ...(foto_url        != null && { fotoUrl: foto_url }),
       })),
       obiettivi: (obiRis.data ?? []).map(({ id, nome, importo_obiettivo, importo_attuale, colore, data_scadenza, created_at }): Obiettivo => ({
         id, nome, colore,
@@ -176,8 +178,35 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       data_fine: nuova.dataFine ?? null,
       template_id: nuova.templateId ?? null,
       tag: nuova.tag ?? null,
+      foto_url: nuova.fotoUrl ?? null,
     });
     if (error) console.error('[Supabase] aggiungi transazione:', error.message, error.code);
+  },
+
+  // Carica la foto dello scontrino su Supabase Storage (bucket pubblico "scontrini") e
+  // restituisce l'URL pubblico da salvare sulla transazione
+  caricaFotoScontrino: async (uri: string) => {
+    try {
+      const risposta = await fetch(uri);
+      const bytes = await risposta.arrayBuffer();
+      // Il tipo mime va letto dalla risposta del fetch, non indovinato dall'estensione
+      // dell'uri: su web expo-image-picker restituisce un uri "blob:" senza estensione
+      const contentType = risposta.headers.get('content-type') || 'image/jpeg';
+      const estensione = contentType.split('/').pop() || 'jpg';
+      const nomeFile = `${generaId()}.${estensione}`;
+      const { error } = await supabase.storage.from('Scontrini').upload(nomeFile, bytes, {
+        contentType,
+      });
+      if (error) {
+        console.error('[Supabase] carica foto scontrino:', error.message);
+        return undefined;
+      }
+      const { data } = supabase.storage.from('Scontrini').getPublicUrl(nomeFile);
+      return data.publicUrl;
+    } catch (e) {
+      console.error('[Supabase] carica foto scontrino:', e);
+      return undefined;
+    }
   },
 
   // Uno spostamento tra conti è modellato come due transazioni collegate (uscita dal conto di
@@ -350,6 +379,7 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
     if (aggiornamenti.istitutoId  !== undefined) dbUpdate.istituto_id  = aggiornamenti.istitutoId;
     if (aggiornamenti.ricorrente  !== undefined) dbUpdate.ricorrente   = aggiornamenti.ricorrente;
     if (aggiornamenti.tag         !== undefined) dbUpdate.tag          = aggiornamenti.tag;
+    if (aggiornamenti.fotoUrl     !== undefined) dbUpdate.foto_url     = aggiornamenti.fotoUrl;
     await supabase.from('transazioni').update(dbUpdate).eq('id', id);
   },
 
