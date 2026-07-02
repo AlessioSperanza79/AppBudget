@@ -27,6 +27,7 @@ import { Categoria, Transazione } from '../../types';
 import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
 import { formatEuro, oggiIso } from '../../utils/formatters';
+import { iconaCategoria } from '../../utils/iconeCategorie';
 import { classificaAvanzo } from '../../utils/livelloRisparmio';
 
 type Periodo = 'mensile' | 'annuale';
@@ -213,6 +214,24 @@ export default function RiepilogoScreen() {
     () => [...transazioniFiltrate].sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()),
     [transazioniFiltrate],
   );
+
+  // Transazioni del periodo raggruppate per categoria: totale netto (entrate positive, uscite
+  // negative) e conteggio, ordinate per rilevanza (importo assoluto) — il dettaglio delle singole
+  // transazioni si vede solo aprendo il popup della categoria, non più elencate una per una
+  const [categoriaDettaglio, setCategoriaDettaglio] = useState<Categoria | undefined>();
+
+  const gruppiPerCategoria = useMemo(() => {
+    const mappa = new Map<string, { categoria: Categoria; totale: number; transazioni: Transazione[] }>();
+    for (const tr of transazioniOrdinate) {
+      const categoria = categorie.find((c) => c.id === tr.categoriaId);
+      if (!categoria) continue;
+      const voce = mappa.get(categoria.id) ?? { categoria, totale: 0, transazioni: [] };
+      voce.totale += tr.tipo === 'entrata' ? tr.importo : -tr.importo;
+      voce.transazioni.push(tr);
+      mappa.set(categoria.id, voce);
+    }
+    return Array.from(mappa.values()).sort((a, b) => Math.abs(b.totale) - Math.abs(a.totale));
+  }, [transazioniOrdinate, categorie]);
 
   // ── Statistiche avanzate ──
 
@@ -543,21 +562,33 @@ export default function RiepilogoScreen() {
           </FadeInView>
         )}
 
-        {/* ── Lista transazioni del periodo ── */}
-        {transazioniOrdinate.length > 0 ? (
+        {/* ── Transazioni del periodo raggruppate per categoria ── */}
+        {gruppiPerCategoria.length > 0 ? (
           <>
-            <SuggerimentoNovita chiave="dettaglio-transazione" testo="Tocca una transazione per vedere i dettagli" icona="hand-left-outline" />
+            <SuggerimentoNovita chiave="dettaglio-categoria-riepilogo" testo="Tocca una categoria per vedere le transazioni" icona="hand-left-outline" />
             <Text style={stili.sottotitolo}>
-              Transazioni ({transazioniOrdinate.length})
+              Categorie ({gruppiPerCategoria.length})
             </Text>
-            {transazioniOrdinate.map((tr) => (
-              <TransactionItem
-                key={tr.id}
-                transazione={tr}
-                categoria={categorie.find((c) => c.id === tr.categoriaId)}
-                istituto={istituti.find((i) => i.id === tr.istitutoId)}
-                mostraAzioni={false}
-              />
+            {gruppiPerCategoria.map(({ categoria, totale, transazioni: txCategoria }) => (
+              <PressableScale
+                key={categoria.id}
+                style={stili.rigaCategoriaGruppo}
+                onPress={() => setCategoriaDettaglio(categoria)}
+              >
+                <View style={[stili.avatarGruppo, { backgroundColor: categoria.colore }]}>
+                  <Ionicons name={iconaCategoria(categoria.nome)} size={18} color="#FFFFFF" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={stili.nomeGruppo}>{categoria.nome}</Text>
+                  <Text style={stili.contoGruppo}>
+                    {txCategoria.length} transazion{txCategoria.length === 1 ? 'e' : 'i'}
+                  </Text>
+                </View>
+                <Text style={[stili.importoGruppo, { color: totale >= 0 ? t.entrata : t.uscita }]}>
+                  {totale >= 0 ? '+' : '−'}{formatEuro(Math.abs(totale))}
+                </Text>
+                <Ionicons name="chevron-forward" size={16} color={t.piuSottile} />
+              </PressableScale>
             ))}
           </>
         ) : (
@@ -565,6 +596,26 @@ export default function RiepilogoScreen() {
         )}
 
       </ScrollView>
+
+      {/* ── Popup dettaglio: transazioni della categoria selezionata ── */}
+      <BottomSheet visibile={!!categoriaDettaglio} onChiudi={() => setCategoriaDettaglio(undefined)} altezza="80%">
+        <View style={stili.corpoDettaglioCategoria}>
+          <Text style={stili.titoloModal}>{categoriaDettaglio?.nome}</Text>
+        </View>
+        <ScrollView style={{ paddingHorizontal: 0 }}>
+          {gruppiPerCategoria
+            .find((g) => g.categoria.id === categoriaDettaglio?.id)
+            ?.transazioni.map((tr) => (
+              <TransactionItem
+                key={tr.id}
+                transazione={tr}
+                categoria={categoriaDettaglio}
+                istituto={istituti.find((i) => i.id === tr.istitutoId)}
+                mostraAzioni={false}
+              />
+            ))}
+        </ScrollView>
+      </BottomSheet>
 
       {/* ── Modal: imposta reddito mensile netto ── */}
       <BottomSheet visibile={modaleReddito} onChiudi={() => setModaleReddito(false)}>
@@ -996,6 +1047,50 @@ function creaStili(t: Tema) {
       margin: 40,
       lineHeight: 24,
       fontSize: 15,
+    },
+
+    // ── Transazioni raggruppate per categoria ──
+    rigaCategoriaGruppo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginVertical: 4,
+      borderRadius: 16,
+      padding: 14,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    avatarGruppo: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+      flexShrink: 0,
+    },
+    nomeGruppo: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: t.titolo,
+    },
+    contoGruppo: {
+      fontSize: 12,
+      color: t.piuSottile,
+      marginTop: 2,
+    },
+    importoGruppo: {
+      fontSize: 15,
+      fontWeight: '700',
+    },
+    corpoDettaglioCategoria: {
+      paddingHorizontal: 24,
+      paddingTop: 4,
+      paddingBottom: 8,
     },
 
     // ── FAB ──
