@@ -16,6 +16,7 @@ import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
 import { Categoria, Istituto, Transazione, TipologiaConto } from '../../types';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
+import { creaPointerConfig } from '../../utils/pointerConfig';
 import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
 import { formatEuro, formatData, oggiIso } from '../../utils/formatters';
@@ -602,6 +603,7 @@ export default function RiepilogoScreen() {
               rulesColor={t.bordoSottile}
               rulesType="solid"
               disableScroll
+              pointerConfig={creaPointerConfig(t, t.primario, 90)}
             />
           </FadeInView>
         )}

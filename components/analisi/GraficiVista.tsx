@@ -1,11 +1,12 @@
 // ── Vista "Grafici" della schermata Analisi: torta + linee + barre ──
-import { useMemo } from 'react';
-import { View, ScrollView, StyleSheet, Platform, useWindowDimensions, RefreshControl } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { View, ScrollView, StyleSheet, Platform, TouchableOpacity, useWindowDimensions, RefreshControl } from 'react-native';
 import Text from '../TestoBase';
 import { BarChart, PieChart, LineChart } from 'react-native-gifted-charts';
 import { Tema } from '../../constants/tema';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { formatEuro } from '../../utils/formatters';
+import { creaPointerConfig } from '../../utils/pointerConfig';
 import { Categoria, Transazione } from '../../types';
 
 const MESI       = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
@@ -25,6 +26,10 @@ interface Props {
 export default function GraficiVista({ transazioni, categorie, t, vista, anno, mese }: Props) {
   const stili = useMemo(() => creaStili(t), [t]);
   const { refreshing, onRefresh } = usePullToRefresh();
+
+  // Indice della fetta della torta toccata dall'utente — null quando nessuna è selezionata
+  const [focoTortaMese, setFocoTortaMese] = useState<number | null>(null);
+  const [focoTortaAnno, setFocoTortaAnno] = useState<number | null>(null);
 
   const { width: LARGHEZZA } = useWindowDimensions();
   // margini sezione (16×2=32) + padding sezione (20×2=40) + asse-y gifted-charts (35) = 107
@@ -57,6 +62,10 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
       .sort((a, b) => b.value - a.value),
     [transazioni, categorie, annoSel],
   );
+
+  // Deselezionare la fetta quando cambia il periodo, altrimenti l'indice punterebbe a un'altra categoria
+  useEffect(() => { setFocoTortaMese(null); }, [annoSel, meseSel]);
+  useEffect(() => { setFocoTortaAnno(null); }, [annoSel]);
 
   const chiaveMese = `${annoSel}-${String(meseSel + 1).padStart(2, '0')}`;
 
@@ -92,6 +101,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
         value: cumulativo,
         label: mostraLabel ? String(g) : '',
         labelTextStyle: { fontSize: 9, color: t.piuSottile },
+        etichettaTooltip: `Giorno ${g}`,
       };
     });
   }, [transazioniFiltrateMese, annoSel, meseSel, chiaveMese, t]);
@@ -213,23 +223,37 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                     radius={90}
                     innerRadius={54}
                     innerCircleColor={t.carta}
-                    centerLabelComponent={() => (
-                      <View style={stili.centroTorta}>
-                        <Text style={stili.centroTortaTitolo}>Totale</Text>
-                        <Text style={stili.centroTortaValore} numberOfLines={1}>
-                          {formatEuro(totaleUsciteTorta)}
-                        </Text>
-                      </View>
-                    )}
+                    onPress={(_item: unknown, index: number) =>
+                      setFocoTortaMese((prec) => (prec === index ? null : index))
+                    }
+                    centerLabelComponent={() => {
+                      const sel = focoTortaMese != null ? datiTorta[focoTortaMese] : null;
+                      const perc = sel && totaleUsciteTorta > 0 ? Math.round((sel.value / totaleUsciteTorta) * 100) : null;
+                      return (
+                        <View style={stili.centroTorta}>
+                          <Text style={stili.centroTortaTitolo} numberOfLines={1}>{sel ? sel.nome : 'Totale'}</Text>
+                          <Text style={stili.centroTortaValore} numberOfLines={1}>
+                            {formatEuro(sel ? sel.value : totaleUsciteTorta)}
+                          </Text>
+                          {perc != null && <Text style={stili.centroTortaPerc}>{perc}% del totale</Text>}
+                        </View>
+                      );
+                    }}
                   />
                 </View>
+                <Text style={stili.suggerimentoTorta}>Tocca una fetta per il dettaglio</Text>
                 <View style={stili.legendaTorta}>
                   {datiTorta.map((d, i) => (
-                    <View key={i} style={stili.voceLegendaTorta}>
+                    <TouchableOpacity
+                      key={i}
+                      activeOpacity={0.6}
+                      style={stili.voceLegendaTorta}
+                      onPress={() => setFocoTortaMese((prec) => (prec === i ? null : i))}
+                    >
                       <View style={[stili.puntino, { backgroundColor: d.color }]} />
-                      <Text style={stili.nomeLegendaTorta} numberOfLines={1}>{d.nome}</Text>
+                      <Text style={[stili.nomeLegendaTorta, i === focoTortaMese && { fontWeight: '700', color: t.titolo }]} numberOfLines={1}>{d.nome}</Text>
                       <Text style={stili.valoreLegendaTorta}>{formatEuro(d.value)}</Text>
-                    </View>
+                    </TouchableOpacity>
                   ))}
                 </View>
               </>
@@ -340,6 +364,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   rulesColor={t.bordoSottile}
                   rulesType="solid"
                   disableScroll
+                  pointerConfig={creaPointerConfig(t, coloreLinea, 160)}
                 />
               </ScrollView>
             ) : (
@@ -410,6 +435,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   rulesColor={t.bordoSottile}
                   rulesType="solid"
                   disableScroll
+                  pointerConfig={creaPointerConfig(t, coloreRisparmio, 160)}
                 />
               </ScrollView>
             </View>
@@ -455,23 +481,37 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   radius={90}
                   innerRadius={54}
                   innerCircleColor={t.carta}
-                  centerLabelComponent={() => (
-                    <View style={stili.centroTorta}>
-                      <Text style={stili.centroTortaTitolo}>Totale</Text>
-                      <Text style={stili.centroTortaValore} numberOfLines={1}>
-                        {formatEuro(totaleUsciteAnno)}
-                      </Text>
-                    </View>
-                  )}
+                  onPress={(_item: unknown, index: number) =>
+                    setFocoTortaAnno((prec) => (prec === index ? null : index))
+                  }
+                  centerLabelComponent={() => {
+                    const sel = focoTortaAnno != null ? datiTortaAnno[focoTortaAnno] : null;
+                    const perc = sel && totaleUsciteAnno > 0 ? Math.round((sel.value / totaleUsciteAnno) * 100) : null;
+                    return (
+                      <View style={stili.centroTorta}>
+                        <Text style={stili.centroTortaTitolo} numberOfLines={1}>{sel ? sel.nome : 'Totale'}</Text>
+                        <Text style={stili.centroTortaValore} numberOfLines={1}>
+                          {formatEuro(sel ? sel.value : totaleUsciteAnno)}
+                        </Text>
+                        {perc != null && <Text style={stili.centroTortaPerc}>{perc}% del totale</Text>}
+                      </View>
+                    );
+                  }}
                 />
               </View>
+              <Text style={stili.suggerimentoTorta}>Tocca una fetta per il dettaglio</Text>
               <View style={stili.legendaTorta}>
                 {datiTortaAnno.map((d, i) => (
-                  <View key={i} style={stili.voceLegendaTorta}>
+                  <TouchableOpacity
+                    key={i}
+                    activeOpacity={0.6}
+                    style={stili.voceLegendaTorta}
+                    onPress={() => setFocoTortaAnno((prec) => (prec === i ? null : i))}
+                  >
                     <View style={[stili.puntino, { backgroundColor: d.color }]} />
-                    <Text style={stili.nomeLegendaTorta} numberOfLines={1}>{d.nome}</Text>
+                    <Text style={[stili.nomeLegendaTorta, i === focoTortaAnno && { fontWeight: '700', color: t.titolo }]} numberOfLines={1}>{d.nome}</Text>
                     <Text style={stili.valoreLegendaTorta}>{formatEuro(d.value)}</Text>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
@@ -568,6 +608,19 @@ function creaStili(t: Tema) {
       fontSize: 13,
       fontWeight: '700',
       color: t.titolo,
+    },
+    centroTortaPerc: {
+      fontSize: 10,
+      fontWeight: '600',
+      color: t.piuSottile,
+      marginTop: 1,
+    },
+    suggerimentoTorta: {
+      textAlign: 'center',
+      fontSize: 11,
+      color: t.piuSottile,
+      marginTop: 2,
+      marginBottom: 8,
     },
     legendaTorta: {
       gap: 8,
