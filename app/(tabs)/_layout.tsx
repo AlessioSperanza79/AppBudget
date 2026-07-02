@@ -29,7 +29,7 @@ export default function TabLayout() {
       initialRouteName="riepilogo"
       screenOptions={{
         headerShown: false,
-        contentStyle: { paddingTop: insets.top, backgroundColor: t.sfondo },
+        sceneStyle: { paddingTop: insets.top, backgroundColor: t.sfondo },
         tabBarActiveTintColor: t.primario,
         tabBarInactiveTintColor: t.piuSottile,
         tabBarStyle: {

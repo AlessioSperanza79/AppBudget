@@ -223,6 +223,22 @@ export default function TabelleVista({ transazioni, categorie, istituti, aggiorn
       }));
   }, [righeUscite, vista]);
 
+  // Andamento della categoria selezionata negli ultimi 6 mesi (indipendente dal periodo
+  // visualizzato: guarda sempre indietro da oggi, per dare un quadro dell'abitudine di spesa)
+  const trendCategoriaDettaglio = useMemo(() => {
+    if (!dettaglio) return [];
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() - (5 - i));
+      const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const totale = transazioni
+        .filter((tr) => !tr.ricorrente && tr.categoriaId === dettaglio.categoriaId && tr.tipo === dettaglio.tipo && tr.data.startsWith(chiave))
+        .reduce((s, tr) => s + tr.importo, 0);
+      return { mese: MESI_INTERI[d.getMonth()].substring(0, 3), totale };
+    });
+  }, [dettaglio, transazioni]);
+
   const transazioniDettaglio = useMemo(() => {
     if (!dettaglio) return [];
     return transazioniFiltrate
@@ -467,6 +483,30 @@ export default function TabelleVista({ transazioni, categorie, istituti, aggiorn
                 >
                   <Text style={stili.testoSalvaBudget}>Imposta</Text>
                 </PressableScale>
+              </View>
+            </View>
+          )}
+
+          {/* ── Trend ultimi 6 mesi della categoria ── */}
+          {trendCategoriaDettaglio.some((m) => m.totale > 0) && (
+            <View style={stili.trendContenitore}>
+              <Text style={stili.titoloEditorBudget}>Andamento ultimi 6 mesi</Text>
+              <View style={stili.trendRigaBarre}>
+                {trendCategoriaDettaglio.map(({ mese: nomeMese, totale }, i) => {
+                  const massimo = Math.max(...trendCategoriaDettaglio.map((m) => m.totale), 1);
+                  const altezza = Math.max((totale / massimo) * 56, totale > 0 ? 4 : 2);
+                  return (
+                    <View key={i} style={stili.trendColonna}>
+                      <View style={stili.trendBarraSfondo}>
+                        <View style={[stili.trendBarra, {
+                          height: altezza,
+                          backgroundColor: dettaglio?.categoria?.colore ?? t.primario,
+                        }]} />
+                      </View>
+                      <Text style={stili.trendEtichettaMese}>{nomeMese}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -955,6 +995,42 @@ function creaStili(t: Tema) {
       marginBottom: 10,
     },
     rigaInputBudget: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+
+    // ── Trend 6 mesi nel modal ──
+    trendContenitore: {
+      margin: 16,
+      marginBottom: 4,
+      backgroundColor: t.superfice,
+      borderRadius: 14,
+      padding: 14,
+      borderWidth: 1,
+      borderColor: t.bordo,
+    },
+    trendRigaBarre: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-end',
+      height: 76,
+    },
+    trendColonna: {
+      alignItems: 'center',
+      gap: 6,
+      flex: 1,
+    },
+    trendBarraSfondo: {
+      height: 56,
+      width: 18,
+      justifyContent: 'flex-end',
+    },
+    trendBarra: {
+      width: 18,
+      borderRadius: 6,
+    },
+    trendEtichettaMese: {
+      fontSize: 10,
+      color: t.piuSottile,
+      fontWeight: '600',
+    },
     inputBudget: {
       flex: 1,
       borderWidth: 1.5,
