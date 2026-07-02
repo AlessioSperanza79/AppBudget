@@ -1,7 +1,7 @@
 // ── Schermata Riepilogo: saldo, cruscotto flusso e ultime transazioni del periodo ──
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useState } from 'react';
+import { ComponentProps, useMemo, useState } from 'react';
 import {
   Platform,
   ScrollView,
@@ -19,14 +19,13 @@ import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import SuggerimentoNovita from '../../components/SuggerimentoNovita';
 import TransactionForm from '../../components/TransactionForm';
-import TransactionItem from '../../components/TransactionItem';
 import { Tema, useTema } from '../../constants/tema';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
-import { Categoria, Transazione } from '../../types';
+import { Categoria, Istituto, Transazione, TipologiaConto } from '../../types';
 import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
-import { formatEuro, oggiIso } from '../../utils/formatters';
+import { formatEuro, formatData, oggiIso } from '../../utils/formatters';
 import { iconaCategoria } from '../../utils/iconeCategorie';
 import { classificaAvanzo } from '../../utils/livelloRisparmio';
 
@@ -96,6 +95,54 @@ function RigaConfronto({
       <View style={{ height: 6, backgroundColor: t.bordoSottile, borderRadius: 3, overflow: 'hidden', marginLeft: 16 }}>
         <View style={{ height: 6, borderRadius: 3, backgroundColor: colore, opacity: 0.35, width: `${percPrecedente}%` as `${number}%` }} />
       </View>
+    </View>
+  );
+}
+
+const ICONE_TIPOLOGIA: Record<TipologiaConto, ComponentProps<typeof Ionicons>['name']> = {
+  conto_corrente: 'business-outline',
+  carta_credito:  'card-outline',
+};
+
+// Riga di dettaglio per il popup categoria: mostra subito data, conto, nota e tag —
+// niente secondo tap, l'utente ha già chiesto il dettaglio cliccando sulla categoria
+function RigaDettaglioTransazione({
+  transazione, istituto,
+}: { transazione: Transazione; istituto?: Istituto }) {
+  const t = useTema();
+  const isEntrata = transazione.tipo === 'entrata';
+
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center', gap: 10,
+      backgroundColor: t.carta, marginHorizontal: 16, marginVertical: 4,
+      borderRadius: 14, padding: 12,
+      shadowColor: t.ombra, shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+    }}>
+      <View style={{ flex: 1, gap: 3 }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: t.titolo }}>{formatData(transazione.data)}</Text>
+        {(istituto || transazione.tipologia) && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {transazione.tipologia && (
+              <Ionicons name={ICONE_TIPOLOGIA[transazione.tipologia]} size={11} color={t.piuSottile} />
+            )}
+            <Text style={{ fontSize: 11, color: t.piuSottile }}>
+              {istituto?.nome ?? (transazione.tipologia === 'conto_corrente' ? 'Conto Corrente' : 'Carta di Credito')}
+            </Text>
+          </View>
+        )}
+        {transazione.nota ? (
+          <Text style={{ fontSize: 11, color: t.sottile, fontStyle: 'italic' }} numberOfLines={1}>{transazione.nota}</Text>
+        ) : null}
+        {transazione.tag ? (
+          <View style={{ alignSelf: 'flex-start', backgroundColor: t.superfice, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 10, fontWeight: '600', color: t.piuSottile }}>{transazione.tag}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text style={{ fontSize: 15, fontWeight: '700', color: isEntrata ? t.entrata : t.uscita }}>
+        {isEntrata ? '+' : '−'}{formatEuro(transazione.importo)}
+      </Text>
     </View>
   );
 }
@@ -606,14 +653,13 @@ export default function RiepilogoScreen() {
           {gruppiPerCategoria
             .find((g) => g.categoria.id === categoriaDettaglio?.id)
             ?.transazioni.map((tr) => (
-              <TransactionItem
+              <RigaDettaglioTransazione
                 key={tr.id}
                 transazione={tr}
-                categoria={categoriaDettaglio}
                 istituto={istituti.find((i) => i.id === tr.istitutoId)}
-                mostraAzioni={false}
               />
             ))}
+          <View style={{ height: 16 }} />
         </ScrollView>
       </BottomSheet>
 
