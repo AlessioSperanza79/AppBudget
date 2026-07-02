@@ -119,9 +119,9 @@ export default function TabelleVista({ transazioni, categorie, istituti, aggiorn
     }
   }, [dettaglio]);
 
-  // ── Filtro periodo (escludi sempre i template ricorrenti) ──
+  // ── Filtro periodo (escludi sempre i template ricorrenti e i trasferimenti tra conti) ──
   const transazioniFiltrate = useMemo(() => {
-    const base = transazioni.filter((tr) => !tr.ricorrente);
+    const base = transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento);
     if (vista === 'annuale') {
       return base.filter((tr) => tr.data.startsWith(String(anno)));
     }
@@ -143,7 +143,7 @@ export default function TabelleVista({ transazioni, categorie, istituti, aggiorn
     const mp = mese === 0 ? 11 : mese - 1;
     const ap = mese === 0 ? anno - 1 : anno;
     const mm = String(mp + 1).padStart(2, '0');
-    return transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(`${ap}-${mm}`));
+    return transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(`${ap}-${mm}`));
   }, [transazioni, vista, anno, mese]);
 
   const righeUscitePrecedenti = useMemo(

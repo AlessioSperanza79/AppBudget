@@ -101,15 +101,17 @@ export default function TransactionItem({
           ) : null}
         </View>
 
+        {/* Un trasferimento è una coppia di transazioni collegate: modificarne/duplicarne
+            solo una gamba romperebbe la simmetria, quindi resta possibile solo eliminarlo */}
         {mostraAzioni && (onDuplica || onModifica || onElimina) && (
           <View style={stili.rigaAzioniModal}>
-            {onDuplica && (
+            {onDuplica && !transazione.trasferimento && (
               <TouchableOpacity style={stili.btnAzioneModal} onPress={azione(onDuplica)}>
                 <Ionicons name="copy-outline" size={18} color={t.viola} />
                 <Text style={[stili.testoBtnAzioneModal, { color: t.viola }]}>Duplica</Text>
               </TouchableOpacity>
             )}
-            {onModifica && (
+            {onModifica && !transazione.trasferimento && (
               <TouchableOpacity style={stili.btnAzioneModal} onPress={azione(onModifica)}>
                 <Ionicons name="pencil-outline" size={18} color={t.primario} />
                 <Text style={[stili.testoBtnAzioneModal, { color: t.primario }]}>Modifica</Text>
@@ -144,7 +146,13 @@ export default function TransactionItem({
         rightThreshold={40}
         containerStyle={stili.involucroSwipe}
         renderRightActions={(_progress, _translation, swipeable) => (
-          <AzioniSwipe t={t} swipeable={swipeable} onDuplica={onDuplica} onModifica={onModifica} onElimina={onElimina} />
+          <AzioniSwipe
+            t={t}
+            swipeable={swipeable}
+            onDuplica={transazione.trasferimento ? undefined : onDuplica}
+            onModifica={transazione.trasferimento ? undefined : onModifica}
+            onElimina={onElimina}
+          />
         )}
       >
         {contenuto}

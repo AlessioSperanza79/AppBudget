@@ -13,6 +13,10 @@ interface Props {
   visibile: boolean;
   onChiudi: () => void;
   onSalva: (dati: Omit<Transazione, 'id'>) => void;
+  onSalvaTrasferimento?: (dati: {
+    importo: number; data: string; nota?: string; tag?: string;
+    istitutoOrigineId: string; istitutoDestinazioneId: string;
+  }) => void;
   transazioneEsistente?: Transazione;
   categorie: Categoria[];
   istituti: Istituto[];
@@ -30,7 +34,7 @@ const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = 
 };
 
 export default function TransactionForm({
-  visibile, onChiudi, onSalva, transazioneEsistente, categorie, istituti, forzaRicorrente,
+  visibile, onChiudi, onSalva, onSalvaTrasferimento, transazioneEsistente, categorie, istituti, forzaRicorrente,
 }: Props) {
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -45,6 +49,13 @@ export default function TransactionForm({
   const [istitutoId,  setIstitutoId]  = useState<string | undefined>();
   const [ricorrente,  setRicorrente]  = useState(false);
   const [dataFine,    setDataFine]    = useState('');
+
+  // Modalità trasferimento: alternativa a Uscita/Entrata, disponibile solo per nuove
+  // transazioni (non in modifica) quando ci sono almeno 2 conti tra cui spostare
+  const [trasferimento, setTrasferimento]                 = useState(false);
+  const [istitutoOrigineId, setIstitutoOrigineId]         = useState<string | undefined>();
+  const [istitutoDestinazioneId, setIstitutoDestinazioneId] = useState<string | undefined>();
+  const trasferimentoDisponibile = !!onSalvaTrasferimento && !forzaRicorrente && !transazioneEsistente && istituti.length >= 2;
 
   const dataFineDefault = (): string => {
     const d = new Date();
@@ -64,6 +75,9 @@ export default function TransactionForm({
       setIstitutoId(transazioneEsistente?.istitutoId);
       setRicorrente(transazioneEsistente?.ricorrente ?? (forzaRicorrente ?? false));
       setDataFine(transazioneEsistente?.dataFine ?? dataFineDefault());
+      setTrasferimento(false);
+      setIstitutoOrigineId(undefined);
+      setIstitutoDestinazioneId(undefined);
     }
   }, [visibile, transazioneEsistente]);
 
@@ -73,6 +87,26 @@ export default function TransactionForm({
       Alert.alert('Importo non valido', 'Inserisci un numero maggiore di zero.');
       return;
     }
+
+    if (trasferimento) {
+      if (!istitutoOrigineId || !istitutoDestinazioneId) {
+        Alert.alert('Conti mancanti', 'Seleziona il conto di origine e quello di destinazione.');
+        return;
+      }
+      if (istitutoOrigineId === istitutoDestinazioneId) {
+        Alert.alert('Conti uguali', 'Il conto di origine e quello di destinazione devono essere diversi.');
+        return;
+      }
+      onSalvaTrasferimento?.({
+        importo: importoNum, data,
+        nota: nota.trim() || undefined,
+        tag: tag.trim() || undefined,
+        istitutoOrigineId, istitutoDestinazioneId,
+      });
+      onChiudi();
+      return;
+    }
+
     if (!categoriaId) {
       Alert.alert('Categoria mancante', 'Seleziona una categoria.');
       return;
@@ -89,7 +123,7 @@ export default function TransactionForm({
     onChiudi();
   };
 
-  const coloreAccento = tipo === 'entrata' ? t.entrata : t.uscita;
+  const coloreAccento = trasferimento ? t.primario : (tipo === 'entrata' ? t.entrata : t.uscita);
 
   return (
     <BottomSheet visibile={visibile} onChiudi={onChiudi} altezza="94%">
@@ -132,13 +166,13 @@ export default function TransactionForm({
           <Text style={stili.etichetta}>Tipo</Text>
           <View style={stili.toggleRiga}>
             {(['uscita', 'entrata'] as TipoTransazione[]).map((tp) => {
-              const attivo = tipo === tp;
+              const attivo = !trasferimento && tipo === tp;
               const c = tp === 'entrata' ? t.entrata : t.uscita;
               return (
                 <TouchableOpacity
                   key={tp}
                   style={[stili.btnToggle, attivo && { backgroundColor: c, borderColor: c }]}
-                  onPress={() => setTipo(tp)}
+                  onPress={() => { setTrasferimento(false); setTipo(tp); }}
                 >
                   <Ionicons
                     name={tp === 'entrata' ? 'arrow-up-circle' : 'arrow-down-circle'}
@@ -151,75 +185,35 @@ export default function TransactionForm({
                 </TouchableOpacity>
               );
             })}
+            {trasferimentoDisponibile && (
+              <TouchableOpacity
+                style={[stili.btnToggle, trasferimento && { backgroundColor: t.primario, borderColor: t.primario }]}
+                onPress={() => setTrasferimento(true)}
+              >
+                <Ionicons
+                  name="swap-horizontal"
+                  size={18}
+                  color={trasferimento ? '#FFF' : t.piuSottile}
+                />
+                <Text style={[stili.testoToggle, trasferimento && { color: '#FFF' }]}>
+                  Trasferimento
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
 
-          {/* ── Categoria ── */}
-          <Text style={stili.etichetta}>Categoria</Text>
-          {/* A capo invece di scorrimento orizzontale: con molte categorie lo scroll orizzontale
-              non è scopribile (soprattutto col mouse sul web) e alcune finivano irraggiungibili */}
-          <View style={stili.righeCategoria}>
-            {categorie.map((cat) => {
-              const selezionata = categoriaId === cat.id;
-              return (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[
-                    stili.chipCategoria,
-                    selezionata && { borderColor: cat.colore, borderWidth: 2, backgroundColor: cat.colore + '1A' },
-                  ]}
-                  onPress={() => setCategoriaId(cat.id)}
-                >
-                  <View style={[stili.puntoCat, { backgroundColor: cat.colore }]}>
-                    <Ionicons name={iconaCategoria(cat.nome)} size={11} color="#FFFFFF" />
-                  </View>
-                  <Text style={[stili.testoCat, selezionata && { color: cat.colore, fontWeight: '700' }]}>
-                    {cat.nome}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* ── Data ── */}
-          <Text style={stili.etichetta}>Data</Text>
-          <SelectorData valore={data} onChange={setData} />
-
-          {/* ── Tipologia conto ── */}
-          <Text style={stili.etichetta}>Tipologia (opzionale)</Text>
-          <View style={stili.toggleRiga}>
-            {(['conto_corrente', 'carta_credito'] as TipologiaConto[]).map((tp) => {
-              const attivo = tipologia === tp;
-              return (
-                <TouchableOpacity
-                  key={tp}
-                  style={[stili.btnToggle, attivo && stili.btnToggleAttivoBlue]}
-                  onPress={() => setTipologia(tipologia === tp ? undefined : tp)}
-                >
-                  <Ionicons
-                    name={ICONE_TIPOLOGIA[tp]}
-                    size={18}
-                    color={attivo ? '#FFF' : t.piuSottile}
-                  />
-                  <Text style={[stili.testoToggle, attivo && { color: '#FFF' }]}>
-                    {ETICHETTE_TIPOLOGIA[tp]}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* ── Istituto ── */}
-          {istituti.length > 0 && (
+          {trasferimento ? (
             <>
-              <Text style={stili.etichetta}>Istituto (opzionale)</Text>
+              {/* ── Conto di origine/destinazione ── */}
+              <Text style={stili.etichetta}>Da</Text>
               <View style={stili.righeCategoria}>
                 {istituti.map((ist) => {
-                  const selezionato = istitutoId === ist.id;
+                  const selezionato = istitutoOrigineId === ist.id;
                   return (
                     <TouchableOpacity
                       key={ist.id}
-                      style={[stili.chipIstituto, selezionato && stili.chipIstitutoAttivo]}
-                      onPress={() => setIstitutoId(istitutoId === ist.id ? undefined : ist.id)}
+                      style={[stili.chipIstituto, selezionato && { backgroundColor: t.uscita, borderColor: t.uscita }]}
+                      onPress={() => setIstitutoOrigineId(ist.id)}
                     >
                       <Text style={[stili.testoChipIstituto, selezionato && { color: '#FFF' }]}>
                         {ist.nome}
@@ -228,6 +222,114 @@ export default function TransactionForm({
                   );
                 })}
               </View>
+
+              <Text style={stili.etichetta}>A</Text>
+              <View style={stili.righeCategoria}>
+                {istituti.map((ist) => {
+                  const selezionato = istitutoDestinazioneId === ist.id;
+                  const disabilitato = istitutoOrigineId === ist.id;
+                  return (
+                    <TouchableOpacity
+                      key={ist.id}
+                      disabled={disabilitato}
+                      style={[
+                        stili.chipIstituto,
+                        selezionato && { backgroundColor: t.entrata, borderColor: t.entrata },
+                        disabilitato && { opacity: 0.35 },
+                      ]}
+                      onPress={() => setIstitutoDestinazioneId(ist.id)}
+                    >
+                      <Text style={[stili.testoChipIstituto, selezionato && { color: '#FFF' }]}>
+                        {ist.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* ── Data ── */}
+              <Text style={stili.etichetta}>Data</Text>
+              <SelectorData valore={data} onChange={setData} />
+            </>
+          ) : (
+            <>
+              {/* ── Categoria ── */}
+              <Text style={stili.etichetta}>Categoria</Text>
+              {/* A capo invece di scorrimento orizzontale: con molte categorie lo scroll orizzontale
+                  non è scopribile (soprattutto col mouse sul web) e alcune finivano irraggiungibili */}
+              <View style={stili.righeCategoria}>
+                {categorie.map((cat) => {
+                  const selezionata = categoriaId === cat.id;
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        stili.chipCategoria,
+                        selezionata && { borderColor: cat.colore, borderWidth: 2, backgroundColor: cat.colore + '1A' },
+                      ]}
+                      onPress={() => setCategoriaId(cat.id)}
+                    >
+                      <View style={[stili.puntoCat, { backgroundColor: cat.colore }]}>
+                        <Ionicons name={iconaCategoria(cat.nome)} size={11} color="#FFFFFF" />
+                      </View>
+                      <Text style={[stili.testoCat, selezionata && { color: cat.colore, fontWeight: '700' }]}>
+                        {cat.nome}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* ── Data ── */}
+              <Text style={stili.etichetta}>Data</Text>
+              <SelectorData valore={data} onChange={setData} />
+
+              {/* ── Tipologia conto ── */}
+              <Text style={stili.etichetta}>Tipologia (opzionale)</Text>
+              <View style={stili.toggleRiga}>
+                {(['conto_corrente', 'carta_credito'] as TipologiaConto[]).map((tp) => {
+                  const attivo = tipologia === tp;
+                  return (
+                    <TouchableOpacity
+                      key={tp}
+                      style={[stili.btnToggle, attivo && stili.btnToggleAttivoBlue]}
+                      onPress={() => setTipologia(tipologia === tp ? undefined : tp)}
+                    >
+                      <Ionicons
+                        name={ICONE_TIPOLOGIA[tp]}
+                        size={18}
+                        color={attivo ? '#FFF' : t.piuSottile}
+                      />
+                      <Text style={[stili.testoToggle, attivo && { color: '#FFF' }]}>
+                        {ETICHETTE_TIPOLOGIA[tp]}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              {/* ── Istituto ── */}
+              {istituti.length > 0 && (
+                <>
+                  <Text style={stili.etichetta}>Istituto (opzionale)</Text>
+                  <View style={stili.righeCategoria}>
+                    {istituti.map((ist) => {
+                      const selezionato = istitutoId === ist.id;
+                      return (
+                        <TouchableOpacity
+                          key={ist.id}
+                          style={[stili.chipIstituto, selezionato && stili.chipIstitutoAttivo]}
+                          onPress={() => setIstitutoId(istitutoId === ist.id ? undefined : ist.id)}
+                        >
+                          <Text style={[stili.testoChipIstituto, selezionato && { color: '#FFF' }]}>
+                            {ist.nome}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
             </>
           )}
 
@@ -254,7 +356,7 @@ export default function TransactionForm({
           />
 
           {/* ── Ricorrente ── */}
-          {!forzaRicorrente && (
+          {!forzaRicorrente && !trasferimento && (
             <>
               <Text style={stili.etichetta}>Ricorrente</Text>
               <TouchableOpacity
@@ -274,7 +376,7 @@ export default function TransactionForm({
             </>
           )}
 
-          {(ricorrente || forzaRicorrente) && (
+          {!trasferimento && (ricorrente || forzaRicorrente) && (
             <>
               <Text style={stili.etichetta}>Fine ricorrenza</Text>
               <SelectorData valore={dataFine} onChange={setDataFine} />
@@ -293,7 +395,9 @@ export default function TransactionForm({
           <Text style={stili.testoSalva}>
             {transazioneEsistente
               ? 'Salva modifiche'
-              : `Aggiungi ${tipo === 'entrata' ? 'entrata' : 'uscita'}`}
+              : trasferimento
+                ? 'Registra trasferimento'
+                : `Aggiungi ${tipo === 'entrata' ? 'entrata' : 'uscita'}`}
           </Text>
         </TouchableOpacity>
 

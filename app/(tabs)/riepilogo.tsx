@@ -141,7 +141,7 @@ function RigaDettaglioTransazione({
 }
 
 export default function RiepilogoScreen() {
-  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione } = useFinanceStore();
+  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione, aggiungiTrasferimento } = useFinanceStore();
   const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
@@ -198,12 +198,12 @@ export default function RiepilogoScreen() {
   }, [transazioni, periodo, dataCorrente]);
 
   const totaleEntrate = useMemo(
-    () => transazioniFiltrate.filter((t) => t.tipo === 'entrata').reduce((a, t) => a + t.importo, 0),
+    () => transazioniFiltrate.filter((t) => t.tipo === 'entrata' && !t.trasferimento).reduce((a, t) => a + t.importo, 0),
     [transazioniFiltrate],
   );
 
   const totaleUscite = useMemo(
-    () => transazioniFiltrate.filter((t) => t.tipo === 'uscita').reduce((a, t) => a + t.importo, 0),
+    () => transazioniFiltrate.filter((t) => t.tipo === 'uscita' && !t.trasferimento).reduce((a, t) => a + t.importo, 0),
     [transazioniFiltrate],
   );
 
@@ -344,7 +344,7 @@ export default function RiepilogoScreen() {
       const d = new Date(dataCorrente.getFullYear(), dataCorrente.getMonth() - i, 1);
       const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       somma += transazioni
-        .filter((tr) => !tr.ricorrente && tr.tipo === 'uscita' && tr.data.startsWith(chiave))
+        .filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.tipo === 'uscita' && tr.data.startsWith(chiave))
         .reduce((s, tr) => s + tr.importo, 0);
     }
     return somma / 3;
@@ -377,7 +377,7 @@ export default function RiepilogoScreen() {
     if (periodo !== 'mensile') return null;
     const d = new Date(dataCorrente.getFullYear(), dataCorrente.getMonth() - 1, 1);
     const chiave = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-    const delMese = transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(chiave));
+    const delMese = transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(chiave));
     return {
       entrate: delMese.filter((tr) => tr.tipo === 'entrata').reduce((s, tr) => s + tr.importo, 0),
       uscite:  delMese.filter((tr) => tr.tipo === 'uscita').reduce((s, tr) => s + tr.importo, 0),
@@ -755,6 +755,7 @@ export default function RiepilogoScreen() {
         visibile={modaleNuova}
         onChiudi={() => setModaleNuova(false)}
         onSalva={gestisciSalvaTransazione}
+        onSalvaTrasferimento={aggiungiTrasferimento}
         categorie={categorie}
         istituti={istituti}
       />

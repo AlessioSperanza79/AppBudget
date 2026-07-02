@@ -51,7 +51,7 @@ export default function AnalisiScreen() {
 
   // ── Totali per la riga riepilogo condivisa ──
   const transazioniFiltrate = useMemo(() => {
-    const base = transazioni.filter((tr) => !tr.ricorrente);
+    const base = transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento);
     if (vista === 'annuale') {
       return base.filter((tr) => tr.data.startsWith(String(anno)));
     }

@@ -36,7 +36,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   const mesiAnno = useMemo(() =>
     Array.from({ length: 12 }, (_, i) => {
       const chiave = `${annoSel}-${String(i + 1).padStart(2, '0')}`;
-      const ts = transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(chiave));
+      const ts = transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(chiave));
       return {
         entrate: ts.filter((tr) => tr.tipo === 'entrata').reduce((s, tr) => s + tr.importo, 0),
         uscite:  ts.filter((tr) => tr.tipo === 'uscita').reduce((s, tr) => s + tr.importo, 0),
@@ -50,7 +50,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
       .map((cat) => ({
         id: cat.id, nome: cat.nome, colore: cat.colore,
         value: transazioni
-          .filter((tr) => !tr.ricorrente && tr.tipo === 'uscita' && tr.categoriaId === cat.id && tr.data.startsWith(String(annoSel)))
+          .filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.tipo === 'uscita' && tr.categoriaId === cat.id && tr.data.startsWith(String(annoSel)))
           .reduce((s, tr) => s + tr.importo, 0),
       }))
       .filter((d) => d.value > 0)
@@ -61,7 +61,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   const chiaveMese = `${annoSel}-${String(meseSel + 1).padStart(2, '0')}`;
 
   const transazioniFiltrateMese = useMemo(
-    () => transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(chiaveMese)),
+    () => transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(chiaveMese)),
     [transazioni, chiaveMese],
   );
 
@@ -104,7 +104,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   );
 
   const transazioniFiltrateMesePrec = useMemo(
-    () => transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(chiaveMesePrec)),
+    () => transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(chiaveMesePrec)),
     [transazioni, chiaveMesePrec],
   );
 
@@ -131,7 +131,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   }, [transazioniFiltrateMese, annoSel, meseSel, t]);
 
   const annoPrecTotali = useMemo(() => {
-    const ts = transazioni.filter((tr) => !tr.ricorrente && tr.data.startsWith(String(annoSel - 1)));
+    const ts = transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(String(annoSel - 1)));
     return {
       entrate: ts.filter((tr) => tr.tipo === 'entrata').reduce((s, tr) => s + tr.importo, 0),
       uscite:  ts.filter((tr) => tr.tipo === 'uscita').reduce((s, tr) => s + tr.importo, 0),

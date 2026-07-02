@@ -32,6 +32,7 @@ const REGOLE: Array<{ parole: string[]; icona: IconaNome }> = [
   { parole: ['beneficenza', 'donazione', 'offerta'],                icona: 'heart-outline' },
   { parole: ['arredamento', 'mobili', 'bricolage'],                 icona: 'construct-outline' },
   { parole: ['tabacco', 'sigarette'],                               icona: 'flame-outline' },
+  { parole: ['trasferimento'],                                      icona: 'swap-horizontal-outline' },
 ];
 
 const ICONA_PREDEFINITA: IconaNome = 'pricetag-outline';

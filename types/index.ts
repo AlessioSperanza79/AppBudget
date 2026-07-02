@@ -52,4 +52,6 @@ export interface Transazione {
   ricorrente?: boolean;     // true = modello template in Pianificazione
   dataFine?: string;        // solo sui modelli ricorrenti: data fine ripetizione "YYYY-MM-DD"
   templateId?: string;      // sulle transazioni auto-create: id del modello padre
+  trasferimento?: boolean;  // true = una delle due gambe di uno spostamento tra conti
+  trasferimentoId?: string; // collega le due transazioni (uscita+entrata) dello stesso spostamento
 }

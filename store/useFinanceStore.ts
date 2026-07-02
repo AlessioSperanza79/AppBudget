@@ -7,6 +7,10 @@ import { ISTITUTI_DEFAULT } from '../constants/istitutiDefault';
 const generaId = (): string =>
   `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 
+// Categoria riservata per i trasferimenti tra conti: creata al bisogno (non fa parte dei
+// CATEGORIE_DEFAULT perché serve anche a chi ha installato l'app prima di questa funzione)
+const ID_CATEGORIA_TRASFERIMENTO = 'trasferimento-interno';
+
 // ────────────────────────────────────────────────────────────────────────────
 // Tipo dello stato dello store
 // ────────────────────────────────────────────────────────────────────────────
@@ -25,6 +29,10 @@ interface FinanceState {
   importaTransazioni: (righe: Omit<Transazione, 'id'>[]) => Promise<void>;
   modificaTransazione: (id: string, aggiornamenti: Partial<Omit<Transazione, 'id'>>) => Promise<void>;
   eliminaTransazione: (id: string) => Promise<void>;
+  aggiungiTrasferimento: (dati: {
+    importo: number; data: string; nota?: string; tag?: string;
+    istitutoOrigineId: string; istitutoDestinazioneId: string;
+  }) => Promise<void>;
 
   aggiungiModelloRicorrente: (dati: Omit<Transazione, 'id'>) => Promise<void>;
   eliminaModelloRicorrente: (id: string) => Promise<void>;
@@ -100,19 +108,21 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(rollover === true && { rollover: true }),
       })),
       istituti:  istDb.map(({ id, nome }): Istituto => ({ id, nome })),
-      transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id, tag }): Transazione => ({
+      transazioni: transDb.map(({ id, importo, tipo, categoria_id, data, nota, tipologia, istituto_id, ricorrente, data_fine, template_id, tag, trasferimento, trasferimento_id }): Transazione => ({
         id,
         importo: Number(importo),
         tipo,
         categoriaId: categoria_id,
         data,
-        ...(nota        != null && { nota }),
-        ...(tipologia   != null && { tipologia }),
-        ...(istituto_id != null && { istitutoId: istituto_id }),
-        ...(ricorrente  === true && { ricorrente: true }),
-        ...(data_fine   != null && { dataFine: data_fine }),
-        ...(template_id != null && { templateId: template_id }),
-        ...(tag         != null && { tag }),
+        ...(nota            != null && { nota }),
+        ...(tipologia       != null && { tipologia }),
+        ...(istituto_id     != null && { istitutoId: istituto_id }),
+        ...(ricorrente      === true && { ricorrente: true }),
+        ...(data_fine       != null && { dataFine: data_fine }),
+        ...(template_id     != null && { templateId: template_id }),
+        ...(tag             != null && { tag }),
+        ...(trasferimento   === true && { trasferimento: true }),
+        ...(trasferimento_id != null && { trasferimentoId: trasferimento_id }),
       })),
       obiettivi: (obiRis.data ?? []).map(({ id, nome, importo_obiettivo, importo_attuale, colore, data_scadenza, created_at }): Obiettivo => ({
         id, nome, colore,
@@ -168,6 +178,52 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       tag: nuova.tag ?? null,
     });
     if (error) console.error('[Supabase] aggiungi transazione:', error.message, error.code);
+  },
+
+  // Uno spostamento tra conti è modellato come due transazioni collegate (uscita dal conto di
+  // origine, entrata su quello di destinazione) sotto una categoria riservata "Trasferimento",
+  // così i totali entrate/uscite del flusso possono escluderle senza bisogno di un tipo a parte
+  aggiungiTrasferimento: async ({ importo, data, nota, tag, istitutoOrigineId, istitutoDestinazioneId }) => {
+    let categoria = get().categorie.find((c) => c.id === ID_CATEGORIA_TRASFERIMENTO);
+    if (!categoria) {
+      categoria = { id: ID_CATEGORIA_TRASFERIMENTO, nome: 'Trasferimento', colore: '#64748B', tipo: 'variabile' };
+      set((s) => ({ categorie: [...s.categorie, categoria!] }));
+      const { error: errCat } = await supabase.from('categorie').insert({
+        id: categoria.id, nome: categoria.nome, colore: categoria.colore, tipo: categoria.tipo,
+      });
+      if (errCat) console.error('[Supabase] crea categoria trasferimento:', errCat.message);
+    }
+
+    const trasferimentoId = generaId();
+    const gambaUscita: Transazione = {
+      id: generaId(), importo, tipo: 'uscita', categoriaId: categoria.id, data,
+      istitutoId: istitutoOrigineId, trasferimento: true, trasferimentoId,
+      ...(nota && { nota }), ...(tag && { tag }),
+    };
+    const gambaEntrata: Transazione = {
+      id: generaId(), importo, tipo: 'entrata', categoriaId: categoria.id, data,
+      istitutoId: istitutoDestinazioneId, trasferimento: true, trasferimentoId,
+      ...(nota && { nota }), ...(tag && { tag }),
+    };
+
+    set((s) => ({ transazioni: [gambaUscita, gambaEntrata, ...s.transazioni] }));
+
+    const { error } = await supabase.from('transazioni').insert([gambaUscita, gambaEntrata].map((tr) => ({
+      id: tr.id,
+      importo: tr.importo,
+      tipo: tr.tipo,
+      categoria_id: tr.categoriaId,
+      data: tr.data,
+      nota: tr.nota ?? null,
+      istituto_id: tr.istitutoId ?? null,
+      tag: tr.tag ?? null,
+      trasferimento: true,
+      trasferimento_id: trasferimentoId,
+    })));
+    if (error) {
+      console.error('[Supabase] aggiungi trasferimento:', error.message, error.code);
+      await get().caricaDati();
+    }
   },
 
   // Inserimento massivo (import CSV): le categorie mancanti vanno create PRIMA di chiamare questa azione
@@ -298,6 +354,20 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
   },
 
   eliminaTransazione: async (id) => {
+    // Un trasferimento è una coppia di transazioni collegate: eliminarne una sola lascerebbe
+    // l'altra gamba orfana, quindi si cancellano sempre insieme
+    const bersaglio = get().transazioni.find((t) => t.id === id);
+    if (bersaglio?.trasferimentoId) {
+      const trasferimentoId = bersaglio.trasferimentoId;
+      set((s) => ({ transazioni: s.transazioni.filter((t) => t.trasferimentoId !== trasferimentoId) }));
+      const { error } = await supabase.from('transazioni').delete().eq('trasferimento_id', trasferimentoId);
+      if (error) {
+        console.error('[Supabase] elimina trasferimento:', error.message);
+        await get().caricaDati();
+      }
+      return;
+    }
+
     set((s) => ({ transazioni: s.transazioni.filter((t) => t.id !== id) }));
     const { error } = await supabase.from('transazioni').delete().eq('id', id);
     if (error) {
