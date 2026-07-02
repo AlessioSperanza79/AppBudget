@@ -33,7 +33,7 @@ const MESI = [
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 export default function TransazioniScreen() {
-  const { transazioni, categorie, istituti, aggiungiTransazione, modificaTransazione, eliminaTransazione, aggiungiTrasferimento, caricaFotoScontrino } =
+  const { transazioni, categorie, istituti, aggiungiTransazione, aggiungiModelloRicorrente, modificaTransazione, eliminaTransazione, aggiungiTrasferimento, caricaFotoScontrino } =
     useFinanceStore();
   const suggerimentoFiltriVisto = usePreferenze((s) => !!s.suggerimentiVisti['filtri-movimenti']);
   const segnaSuggerimentoVisto = usePreferenze((s) => s.segnaSuggerimentoVisto);
@@ -160,6 +160,10 @@ export default function TransazioniScreen() {
   const gestisciSalva = (dati: Omit<Transazione, 'id'>) => {
     if (transazioneSelezionata) {
       modificaTransazione(transazioneSelezionata.id, dati);
+    } else if (dati.ricorrente) {
+      // Un modello ricorrente creato da qui deve generare subito le transazioni mensili
+      // fino a dataFine, non solo comparire come riga invisibile ai conteggi
+      aggiungiModelloRicorrente(dati);
     } else {
       aggiungiTransazione(dati);
     }

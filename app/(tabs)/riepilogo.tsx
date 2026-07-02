@@ -143,7 +143,7 @@ function RigaDettaglioTransazione({
 }
 
 export default function RiepilogoScreen() {
-  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione, aggiungiTrasferimento, caricaFotoScontrino } = useFinanceStore();
+  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione, aggiungiModelloRicorrente, aggiungiTrasferimento, caricaFotoScontrino } = useFinanceStore();
   const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
@@ -170,7 +170,13 @@ export default function RiepilogoScreen() {
   const [modaleNuova, setModaleNuova] = useState(false);
 
   const gestisciSalvaTransazione = (dati: Omit<Transazione, 'id'>) => {
-    aggiungiTransazione(dati);
+    if (dati.ricorrente) {
+      // Un modello ricorrente creato da qui deve generare subito le transazioni mensili
+      // fino a dataFine, non solo comparire come riga invisibile ai conteggi
+      aggiungiModelloRicorrente(dati);
+    } else {
+      aggiungiTransazione(dati);
+    }
   };
 
   const naviga = (direzione: 1 | -1) => {
