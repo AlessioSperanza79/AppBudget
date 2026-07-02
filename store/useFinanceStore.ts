@@ -114,11 +114,12 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(template_id != null && { templateId: template_id }),
         ...(tag         != null && { tag }),
       })),
-      obiettivi: (obiRis.data ?? []).map(({ id, nome, importo_obiettivo, importo_attuale, colore, data_scadenza }): Obiettivo => ({
+      obiettivi: (obiRis.data ?? []).map(({ id, nome, importo_obiettivo, importo_attuale, colore, data_scadenza, created_at }): Obiettivo => ({
         id, nome, colore,
         importoObiettivo: Number(importo_obiettivo),
         importoAttuale: Number(importo_attuale),
         ...(data_scadenza != null && { dataScadenza: data_scadenza }),
+        ...(created_at != null && { createdAt: created_at }),
       })),
       reddito: Number(impostRis.data?.reddito_mensile ?? 0),
       caricamento: false,

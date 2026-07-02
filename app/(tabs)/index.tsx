@@ -1,6 +1,6 @@
 // ── Schermata principale: lista transazioni filtrata per periodo ──
 import { useState, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, TextInput, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, ScrollView, StyleSheet, TextInput, Platform, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import TransactionItem from '../../components/TransactionItem';
@@ -12,6 +12,7 @@ import BottomSheet from '../../components/BottomSheet';
 import ConfermaDialog from '../../components/ConfermaDialog';
 import SuggerimentoNovita from '../../components/SuggerimentoNovita';
 import { useTema, Tema } from '../../constants/tema';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { usePreferenze } from '../../store/usePreferenze';
 import { Transazione, TipoTransazione, TipologiaConto } from '../../types';
 import { oggiIso } from '../../utils/formatters';
@@ -33,6 +34,10 @@ export default function TransazioniScreen() {
     useFinanceStore();
   const suggerimentoFiltriVisto = usePreferenze((s) => !!s.suggerimentiVisti['filtri-movimenti']);
   const segnaSuggerimentoVisto = usePreferenze((s) => s.segnaSuggerimentoVisto);
+  const ricercheRecenti = usePreferenze((s) => s.ricercheRecenti);
+  const aggiungiRicercaRecente = usePreferenze((s) => s.aggiungiRicercaRecente);
+  const [ricercaFocalizzata, setRicercaFocalizzata] = useState(false);
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -212,6 +217,9 @@ export default function TransazioniScreen() {
               style={stili.inputRicerca}
               value={cerca}
               onChangeText={setCerca}
+              onFocus={() => setRicercaFocalizzata(true)}
+              onBlur={() => setTimeout(() => setRicercaFocalizzata(false), 150)}
+              onSubmitEditing={() => { if (cerca.trim()) aggiungiRicercaRecente(cerca.trim()); }}
               placeholder="Cerca per nota, categoria o importo…"
               placeholderTextColor={t.segnaposto}
               returnKeyType="search"
@@ -254,6 +262,17 @@ export default function TransazioniScreen() {
             />
           </PressableScale>
         </View>
+
+        {ricercaFocalizzata && cerca.trim() === '' && ricercheRecenti.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={stili.rigaRicercheRecenti} keyboardShouldPersistTaps="handled">
+            {ricercheRecenti.map((r) => (
+              <TouchableOpacity key={r} style={stili.chipRicerca} onPress={() => setCerca(r)}>
+                <Ionicons name="time-outline" size={12} color={t.piuSottile} />
+                <Text style={stili.testoChipRicerca} numberOfLines={1}>{r}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
       </FadeInView>
 
       {transazioniVisibili.length > 0 && (
@@ -263,6 +282,7 @@ export default function TransazioniScreen() {
       <FlatList
         data={transazioniVisibili}
         keyExtractor={(item) => item.id}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
         renderItem={({ item }) => (
           <TransactionItem
             transazione={item}
@@ -538,6 +558,28 @@ function creaStili(t: Tema) {
       flex: 1,
       fontSize: 14,
       color: t.titolo,
+    },
+
+    // ── Cronologia ricerca ──
+    rigaRicercheRecenti: {
+      marginTop: 8,
+    },
+    chipRicerca: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 5,
+      backgroundColor: t.carta,
+      borderRadius: 16,
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      marginRight: 8,
+      borderWidth: 1,
+      borderColor: t.bordo,
+    },
+    testoChipRicerca: {
+      fontSize: 12,
+      color: t.sottile,
+      maxWidth: 140,
     },
 
     // ── Pulsante filtri ──

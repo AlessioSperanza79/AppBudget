@@ -1,8 +1,9 @@
 // ── Vista "Grafici" della schermata Analisi: torta + linee + barre ──
 import { useMemo } from 'react';
-import { View, Text, ScrollView, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Platform, useWindowDimensions, RefreshControl } from 'react-native';
 import { BarChart, PieChart, LineChart } from 'react-native-gifted-charts';
 import { Tema } from '../../constants/tema';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { formatEuro } from '../../utils/formatters';
 import { Categoria, Transazione } from '../../types';
 
@@ -22,6 +23,7 @@ interface Props {
 
 export default function GraficiVista({ transazioni, categorie, t, vista, anno, mese }: Props) {
   const stili = useMemo(() => creaStili(t), [t]);
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const { width: LARGHEZZA } = useWindowDimensions();
   // margini sezione (16×2=32) + padding sezione (20×2=40) + asse-y gifted-charts (35) = 107
@@ -188,7 +190,11 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   ];
 
   return (
-    <ScrollView style={stili.contenitore} contentContainerStyle={{ paddingBottom: 40 }}>
+    <ScrollView
+      style={stili.contenitore}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
+    >
 
       {/* ══════════════════════════════ VISTA MENSILE ══════════════════════════════ */}
       {vista === 'mensile' && (

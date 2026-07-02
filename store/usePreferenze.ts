@@ -11,7 +11,11 @@ interface PreferenzeState {
   setTourCompletato: (v: boolean) => void;
   suggerimentiVisti: Record<string, boolean>;
   segnaSuggerimentoVisto: (chiave: string) => void;
+  ricercheRecenti: string[];
+  aggiungiRicercaRecente: (testo: string) => void;
 }
+
+const MAX_RICERCHE_RECENTI = 8;
 
 export const usePreferenze = create<PreferenzeState>()(
   persist(
@@ -23,6 +27,11 @@ export const usePreferenze = create<PreferenzeState>()(
       suggerimentiVisti: {},
       segnaSuggerimentoVisto: (chiave) =>
         set((s) => ({ suggerimentiVisti: { ...s.suggerimentiVisti, [chiave]: true } })),
+      ricercheRecenti: [],
+      aggiungiRicercaRecente: (testo) =>
+        set((s) => ({
+          ricercheRecenti: [testo, ...s.ricercheRecenti.filter((r) => r !== testo)].slice(0, MAX_RICERCHE_RECENTI),
+        })),
     }),
     {
       name: 'preferenze-app',

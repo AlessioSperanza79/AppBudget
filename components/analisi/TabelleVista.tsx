@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  Modal, FlatList, StyleSheet, TextInput, Platform,
+  Modal, FlatList, StyleSheet, TextInput, Platform, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Categoria, Istituto, Transazione } from '../../types';
@@ -10,6 +10,7 @@ import { formatEuro } from '../../utils/formatters';
 import TransactionItem from '../../components/TransactionItem';
 import PressableScale from '../../components/PressableScale';
 import { useTema, Tema } from '../../constants/tema';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
 type Vista = 'mensile' | 'annuale';
 
@@ -99,6 +100,7 @@ interface Props {
 
 export default function TabelleVista({ transazioni, categorie, istituti, aggiornaBudgetCategoria, t, vista, anno, mese, periodoLabel }: Props) {
   const stili = useMemo(() => creaStili(t), [t]);
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const [dettaglio, setDettaglio] = useState<{
     categoriaId: string;
@@ -259,7 +261,11 @@ export default function TabelleVista({ transazioni, categorie, istituti, aggiorn
 
   return (
     <>
-      <ScrollView style={stili.contenitore} contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView
+        style={stili.contenitore}
+        contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
+      >
 
         {/* ── Tasso di risparmio ── */}
         <View style={stili.cardMetrica}>

@@ -1,6 +1,6 @@
 // ── Vista "Budget" della schermata Pianifica: piano mensile a somma zero con rollover ──
 import { useMemo, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform, RefreshControl } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Categoria, Transazione } from '../../types';
@@ -10,6 +10,7 @@ import EmptyState from '../EmptyState';
 import PressableScale from '../PressableScale';
 import BottomSheet from '../BottomSheet';
 import { useTema, Tema } from '../../constants/tema';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
@@ -35,6 +36,7 @@ export default function BudgetVista() {
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const oggi = new Date();
   const [anno, setAnno] = useState(oggi.getFullYear());
@@ -129,6 +131,7 @@ export default function BudgetVista() {
         data={righe}
         keyExtractor={(r) => r.categoria.id}
         contentContainerStyle={{ padding: 16, paddingTop: 4, paddingBottom: 100 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
         ListEmptyComponent={
           <EmptyState
             icona="wallet-outline"

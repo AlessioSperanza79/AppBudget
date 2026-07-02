@@ -1,7 +1,7 @@
 // ── Vista "Ricorrenti" della schermata Pianifica: modelli ricorrenti e applicazione mensile ──
 import { useState, useMemo } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, Platform, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
@@ -14,6 +14,7 @@ import FadeInView from '../../components/FadeInView';
 import PressableScale from '../../components/PressableScale';
 import ConfermaDialog from '../../components/ConfermaDialog';
 import { useTema, Tema } from '../../constants/tema';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
@@ -32,6 +33,7 @@ export default function RicorrentiVista() {
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const oggi = new Date();
   const [annoTarget, setAnnoTarget] = useState(oggi.getFullYear());
@@ -84,7 +86,10 @@ export default function RicorrentiVista() {
 
   return (
     <View style={stili.contenitore}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 100 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
+      >
 
         {/* ── Riepilogo modelli ── */}
         {ricorrenti.length > 0 && (

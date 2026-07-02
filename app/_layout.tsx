@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import AppLock from '@/components/AppLock';
+import BarraCaricamento from '@/components/BarraCaricamento';
 import NotificheManager from '@/components/NotificheManager';
 import TourIntroduttivo from '@/components/onboarding/TourIntroduttivo';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -108,6 +109,7 @@ function RootLayoutNav() {
         <TourIntroduttivo visibile={mostraTour} onChiudi={() => setMostraTour(false)} />
         <AppLock bloccato={bloccato} onSbloccato={() => { setBloccato(false); segnaSessioneSbloccata(); }} />
         <NotificheManager />
+        <BarraCaricamento />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

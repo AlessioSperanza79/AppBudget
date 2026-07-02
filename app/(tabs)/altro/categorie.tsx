@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Platform, KeyboardAvoidingView, ScrollView,
+  StyleSheet, Platform, KeyboardAvoidingView, ScrollView, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../../store/useFinanceStore';
@@ -11,6 +11,7 @@ import PressableScale from '../../../components/PressableScale';
 import BottomSheet from '../../../components/BottomSheet';
 import ConfermaDialog from '../../../components/ConfermaDialog';
 import { useTema, Tema } from '../../../constants/tema';
+import { usePullToRefresh } from '../../../hooks/usePullToRefresh';
 import { PALETTE_CATEGORIE } from '../../../constants/paletteCategorie';
 import { formatEuro } from '../../../utils/formatters';
 import { iconaCategoria } from '../../../utils/iconeCategorie';
@@ -30,6 +31,7 @@ export default function CategorieScreen() {
   const {
     categorie, transazioni, aggiungiCategoria, rinominaCategoria, eliminaCategoria, aggiornaTipoCategoria,
   } = useFinanceStore();
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -98,6 +100,7 @@ export default function CategorieScreen() {
       <FlatList
         style={stili.lista}
         data={categorie}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => {

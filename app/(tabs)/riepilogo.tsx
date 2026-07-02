@@ -4,6 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ComponentProps, useMemo, useState } from 'react';
 import {
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -23,6 +24,7 @@ import { Tema, useTema } from '../../constants/tema';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { PreferenzaTema, usePreferenze } from '../../store/usePreferenze';
 import { Categoria, Istituto, Transazione, TipologiaConto } from '../../types';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { generaBackupJson } from '../../utils/backup';
 import { esportaFile } from '../../utils/exportFile';
 import { formatEuro, formatData, oggiIso } from '../../utils/formatters';
@@ -149,6 +151,7 @@ function RigaDettaglioTransazione({
 
 export default function RiepilogoScreen() {
   const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione } = useFinanceStore();
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -280,6 +283,33 @@ export default function RiepilogoScreen() {
     return Array.from(mappa.values()).sort((a, b) => Math.abs(b.totale) - Math.abs(a.totale));
   }, [transazioniOrdinate, categorie]);
 
+  // Prossimi pagamenti ricorrenti attesi nel mese: stessa logica di "giorno atteso" usata in
+  // applicaRicorrenti (store/useFinanceStore.ts). Ha senso solo mentre si guarda il mese
+  // corrente reale — "prossimo" non significa nulla navigando su un mese passato o futuro
+  const prossimeRicorrenze = useMemo(() => {
+    const oggi = new Date();
+    const isMeseCorrente = periodo === 'mensile'
+      && dataCorrente.getFullYear() === oggi.getFullYear()
+      && dataCorrente.getMonth() === oggi.getMonth();
+    if (!isMeseCorrente) return [];
+
+    const maxGiorno = new Date(oggi.getFullYear(), oggi.getMonth() + 1, 0).getDate();
+
+    return transazioni
+      .filter((tr) => tr.ricorrente)
+      .map((tr) => {
+        const giornoOriginale = new Date(tr.data + 'T00:00:00').getDate();
+        const giorno = Math.min(giornoOriginale, maxGiorno);
+        return { transazione: tr, giorno };
+      })
+      .filter(({ giorno, transazione }) => {
+        if (giorno < oggi.getDate()) return false;
+        if (transazione.dataFine && transazione.dataFine < oggiIso()) return false;
+        return true;
+      })
+      .sort((a, b) => a.giorno - b.giorno);
+  }, [transazioni, periodo, dataCorrente]);
+
   // ── Statistiche avanzate ──
 
   // Giorni trascorsi nel periodo selezionato (usati come denominatore della media giornaliera)
@@ -376,7 +406,10 @@ export default function RiepilogoScreen() {
 
   return (
     <View style={stili.contenitore}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 32 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 32 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
+      >
 
         {/* ── Toggle Mensile / Annuale + Navigatore ── */}
         <View style={stili.controlliContenitore}>
@@ -529,6 +562,30 @@ export default function RiepilogoScreen() {
             </TouchableOpacity>
           )}
         </FadeInView>
+
+        {/* ── Prossimi pagamenti ricorrenti del mese ── */}
+        {prossimeRicorrenze.length > 0 && (
+          <FadeInView ritardo={120} style={stili.sezioneStatistiche}>
+            <Text style={stili.titoloSparkline}>Prossimi pagamenti</Text>
+            {prossimeRicorrenze.map(({ transazione: tr, giorno }) => {
+              const categoria = categorie.find((c) => c.id === tr.categoriaId);
+              const isEntrata = tr.tipo === 'entrata';
+              return (
+                <View key={tr.id} style={stili.rigaStatistica}>
+                  <View style={stili.etichettaConPuntino}>
+                    <View style={[stili.puntinoStat, { backgroundColor: categoria?.colore ?? t.piuSottile }]} />
+                    <Text style={stili.etichettaStatistica} numberOfLines={1}>
+                      {categoria?.nome ?? '—'} · giorno {giorno}
+                    </Text>
+                  </View>
+                  <Text style={[stili.valoreStatistica, { color: isEntrata ? t.entrata : t.uscita }]}>
+                    {isEntrata ? '+' : '−'}{formatEuro(tr.importo)}
+                  </Text>
+                </View>
+              );
+            })}
+          </FadeInView>
+        )}
 
         {/* ── Sparkline saldo ultimi 6 mesi ── */}
         {ultimi6MesiSaldi.some((d) => d.value !== 0) && (

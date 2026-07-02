@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  StyleSheet, Platform, KeyboardAvoidingView,
+  StyleSheet, Platform, KeyboardAvoidingView, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../../store/useFinanceStore';
@@ -11,12 +11,14 @@ import PressableScale from '../../../components/PressableScale';
 import BottomSheet from '../../../components/BottomSheet';
 import ConfermaDialog from '../../../components/ConfermaDialog';
 import { useTema, Tema } from '../../../constants/tema';
+import { usePullToRefresh } from '../../../hooks/usePullToRefresh';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
 
 export default function ContiScreen() {
   const { istituti, transazioni, aggiungiIstituto, rinominaIstituto, eliminaIstituto } = useFinanceStore();
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -55,6 +57,7 @@ export default function ContiScreen() {
       <FlatList
         style={stili.lista}
         data={istituti}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
         renderItem={({ item }) => (

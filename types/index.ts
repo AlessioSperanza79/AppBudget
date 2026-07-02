@@ -35,6 +35,7 @@ export interface Obiettivo {
   importoAttuale: number;   // somma accumulata finora
   colore: string;           // colore esadecimale per la barra di progresso
   dataScadenza?: string;    // scadenza facoltativa "YYYY-MM-DD"
+  createdAt?: string;       // data di creazione, usata per stimare il ritmo di risparmio
 }
 
 /** Una singola transazione finanziaria */

@@ -2,12 +2,13 @@
 import { useState, useMemo } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, TextInput,
-  ScrollView, KeyboardAvoidingView, StyleSheet, Platform,
+  ScrollView, KeyboardAvoidingView, StyleSheet, Platform, RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
 import { Obiettivo } from '../../types';
 import { useTema, Tema } from '../../constants/tema';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { formatEuro, formatData } from '../../utils/formatters';
 import EmptyState from '../../components/EmptyState';
 import PressableScale from '../../components/PressableScale';
@@ -29,11 +30,31 @@ const dataScadenzaDefault = (): string => {
   return d.toISOString().slice(0, 10);
 };
 
+const GIORNI_MINIMI_STIMA = 3;
+
+// Stima approssimativa (non un vero storico versamenti, solo importoAttuale/tempo trascorso
+// dalla creazione) di quando l'obiettivo verrà raggiunto al ritmo di accumulo attuale
+function stimaCompletamento(obiettivo: Obiettivo): string | undefined {
+  if (!obiettivo.createdAt || obiettivo.importoAttuale <= 0) return undefined;
+  if (obiettivo.importoAttuale >= obiettivo.importoObiettivo) return undefined;
+
+  const giorniTrascorsi = Math.floor((Date.now() - new Date(obiettivo.createdAt).getTime()) / 86400000);
+  if (giorniTrascorsi < GIORNI_MINIMI_STIMA) return undefined;
+
+  const ritmoGiornaliero = obiettivo.importoAttuale / giorniTrascorsi;
+  if (ritmoGiornaliero <= 0) return undefined;
+
+  const giorniMancanti = (obiettivo.importoObiettivo - obiettivo.importoAttuale) / ritmoGiornaliero;
+  const dataStimata = new Date(Date.now() + giorniMancanti * 86400000);
+  return formatData(dataStimata.toISOString().slice(0, 10));
+}
+
 export default function ObiettiviVista() {
   const { obiettivi, aggiungiObiettivo, modificaObiettivo, eliminaObiettivo } = useFinanceStore();
 
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
+  const { refreshing, onRefresh } = usePullToRefresh();
 
   const [modaleObiettivo, setModaleObiettivo]   = useState(false);
   const [obiettivoInModifica, setObiettivoInModifica] = useState<Obiettivo | undefined>();
@@ -115,6 +136,7 @@ export default function ObiettiviVista() {
         data={obiettivi}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: 16 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={t.primario} colors={[t.primario]} />}
         ListEmptyComponent={
           <EmptyState
             icona="flag-outline"
@@ -126,6 +148,7 @@ export default function ObiettiviVista() {
         renderItem={({ item }) => {
           const perc = Math.min((item.importoAttuale / item.importoObiettivo) * 100, 100);
           const completato = item.importoAttuale >= item.importoObiettivo;
+          const stima = stimaCompletamento(item);
           return (
             <View style={stili.riga}>
               <View style={stili.rigaPrincipale}>
@@ -156,6 +179,11 @@ export default function ObiettiviVista() {
                 <View style={stili.progressoBarraSfondo}>
                   <View style={[stili.progressoBarra, { width: `${perc}%` as `${number}%`, backgroundColor: item.colore }]} />
                 </View>
+                {stima && (
+                  <Text style={stili.testoStima}>
+                    Al ritmo attuale: completato entro il {stima}
+                  </Text>
+                )}
               </View>
 
               <PressableScale style={stili.btnFondi} onPress={() => apriFondi(item)}>
@@ -394,6 +422,11 @@ function creaStili(t: Tema) {
     progressoBarra: {
       height: 6,
       borderRadius: 3,
+    },
+    testoStima: {
+      fontSize: 11,
+      color: t.piuSottile,
+      marginTop: 2,
     },
 
     // ── Gestisci fondi ──
