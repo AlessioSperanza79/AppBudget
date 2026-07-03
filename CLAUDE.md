@@ -120,3 +120,19 @@ AppBudget/
 - Expo Router: https://docs.expo.dev/router/introduction/
 - react-native-gifted-charts: https://gifted-charts.web.app/
 - Supabase JS client: https://supabase.com/docs/reference/javascript/introduction
+
+# Regole di Efficienza (Risparmio Token)
+
+## Comportamento di Risposta
+- Sii estremamente sintetico. Mostra SOLO il codice modificato o nuovo.
+- Non fare introduzioni, spiegazioni teoriche o riassunti di ciò che hai fatto.
+- Scrivi il codice direttamente, evitando passaggi intermedi o riflessioni superflue.
+
+## Gestione della Memoria
+- Se la cronologia dei messaggi (Messages) supera i 40k token, esegui automaticamente il comando `/compact`.
+- Non rileggere interi file se sono già stati letti nella sessione. Chiedi conferma se hai dubbi.
+- Ignora categoricamente le cartelle di grandi dimensioni non necessarie allo sviluppo (es. `node_modules`, `dist`, `.git`).
+
+# Istruzioni di Controllo Token
+- Quando noti che la cronologia accumula molti messaggi, esegui autonomamente il comando `/compact`.
+- Scrivi solo soluzioni di codice dirette, non fare riflessioni estese a voce alta.
