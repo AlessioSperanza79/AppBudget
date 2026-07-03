@@ -4,7 +4,7 @@ import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Transazione, Categoria, Istituto, TipoTransazione, TipologiaConto } from '../types';
-import { oggiIso } from '../utils/formatters';
+import { formatEuro, oggiIso } from '../utils/formatters';
 import { iconaCategoria } from '../utils/iconeCategorie';
 import SelectorData from './SelectorData';
 import BottomSheet from './BottomSheet';
@@ -18,12 +18,22 @@ interface Props {
     importo: number; data: string; nota?: string; tag?: string;
     istitutoOrigineId: string; istitutoDestinazioneId: string;
   }) => void;
+  onSalvaDivisa?: (righe: Omit<Transazione, 'id'>[]) => void;
   onCaricaFoto?: (uri: string) => Promise<string | undefined>;
   transazioneEsistente?: Transazione;
   categorie: Categoria[];
   istituti: Istituto[];
   forzaRicorrente?: boolean;
 }
+
+interface RigaDivisione {
+  id: string;
+  categoriaId: string;
+  importo: string;
+}
+
+let contatoreRigaDivisione = 0;
+const creaRigaDivisioneVuota = (): RigaDivisione => ({ id: `riga-${contatoreRigaDivisione++}`, categoriaId: '', importo: '' });
 
 const ETICHETTE_TIPOLOGIA: Record<TipologiaConto, string> = {
   conto_corrente: 'Conto Corrente',
@@ -36,7 +46,7 @@ const ICONE_TIPOLOGIA: Record<TipologiaConto, keyof typeof Ionicons.glyphMap> = 
 };
 
 export default function TransactionForm({
-  visibile, onChiudi, onSalva, onSalvaTrasferimento, onCaricaFoto, transazioneEsistente, categorie, istituti, forzaRicorrente,
+  visibile, onChiudi, onSalva, onSalvaTrasferimento, onSalvaDivisa, onCaricaFoto, transazioneEsistente, categorie, istituti, forzaRicorrente,
 }: Props) {
   const t = useTema();
   const stili = useMemo(() => creaStili(t), [t]);
@@ -58,6 +68,24 @@ export default function TransactionForm({
   const [istitutoOrigineId, setIstitutoOrigineId]         = useState<string | undefined>();
   const [istitutoDestinazioneId, setIstitutoDestinazioneId] = useState<string | undefined>();
   const trasferimentoDisponibile = !!onSalvaTrasferimento && !forzaRicorrente && !transazioneEsistente && istituti.length >= 2;
+
+  // Modalità divisione: sostituisce la categoria singola con più righe categoria+importo che
+  // devono sommare al totale — disponibile solo per nuove transazioni non ricorrenti/trasferimento
+  const [divisione, setDivisione]           = useState(false);
+  const [righeDivisione, setRigheDivisione] = useState<RigaDivisione[]>([creaRigaDivisioneVuota(), creaRigaDivisioneVuota()]);
+  const [rigaSelettoreCategoria, setRigaSelettoreCategoria] = useState<string | undefined>();
+  const divisioneDisponibile = !!onSalvaDivisa && !forzaRicorrente && !transazioneEsistente;
+
+  const aggiornaRigaDivisione = (id: string, campo: 'categoriaId' | 'importo', valore: string) => {
+    setRigheDivisione((righe) => righe.map((r) => r.id === id ? { ...r, [campo]: valore } : r));
+  };
+  const aggiungiRigaDivisione = () => setRigheDivisione((righe) => [...righe, creaRigaDivisioneVuota()]);
+  const rimuoviRigaDivisione = (id: string) => setRigheDivisione((righe) => righe.length > 2 ? righe.filter((r) => r.id !== id) : righe);
+
+  const totaleRigheDivisione = righeDivisione.reduce((s, r) => s + (parseFloat(r.importo.replace(',', '.')) || 0), 0);
+  const residuoDivisione = Math.round((((parseFloat(importo.replace(',', '.')) || 0) - totaleRigheDivisione)) * 100) / 100;
+  const righeDivisioneValide = righeDivisione.every((r) => r.categoriaId && (parseFloat(r.importo.replace(',', '.')) || 0) > 0);
+  const divisioneValida = righeDivisioneValide && residuoDivisione === 0 && (parseFloat(importo.replace(',', '.')) || 0) > 0;
 
   // Foto scontrino: fotoUri può essere un URL già caricato (in modifica) o un percorso
   // locale appena scelto/scattato, caricato su Supabase solo al salvataggio
@@ -86,6 +114,9 @@ export default function TransactionForm({
       setIstitutoOrigineId(undefined);
       setIstitutoDestinazioneId(undefined);
       setFotoUri(transazioneEsistente?.fotoUrl);
+      setDivisione(false);
+      setRigheDivisione([creaRigaDivisioneVuota(), creaRigaDivisioneVuota()]);
+      setRigaSelettoreCategoria(undefined);
     }
   }, [visibile, transazioneEsistente]);
 
@@ -129,6 +160,23 @@ export default function TransactionForm({
         tag: tag.trim() || undefined,
         istitutoOrigineId, istitutoDestinazioneId,
       });
+      onChiudi();
+      return;
+    }
+
+    if (divisione) {
+      if (!divisioneValida) {
+        Alert.alert('Suddivisione incompleta', 'Ogni riga deve avere una categoria e un importo, e la somma deve corrispondere al totale.');
+        return;
+      }
+      const righe: Omit<Transazione, 'id'>[] = righeDivisione.map((r) => ({
+        importo: parseFloat(r.importo.replace(',', '.')),
+        tipo, categoriaId: r.categoriaId, data,
+        nota: nota.trim() || undefined,
+        tag: tag.trim() || undefined,
+        tipologia, istitutoId,
+      }));
+      onSalvaDivisa?.(righe);
       onChiudi();
       return;
     }
@@ -294,32 +342,126 @@ export default function TransactionForm({
             </>
           ) : (
             <>
-              {/* ── Categoria ── */}
-              <Text style={stili.etichetta}>Categoria</Text>
-              {/* A capo invece di scorrimento orizzontale: con molte categorie lo scroll orizzontale
-                  non è scopribile (soprattutto col mouse sul web) e alcune finivano irraggiungibili */}
-              <View style={stili.righeCategoria}>
-                {categorie.map((cat) => {
-                  const selezionata = categoriaId === cat.id;
-                  return (
-                    <TouchableOpacity
-                      key={cat.id}
-                      style={[
-                        stili.chipCategoria,
-                        selezionata && { borderColor: cat.colore, borderWidth: 2, backgroundColor: cat.colore + '1A' },
-                      ]}
-                      onPress={() => setCategoriaId(cat.id)}
-                    >
-                      <View style={[stili.puntoCat, { backgroundColor: cat.colore }]}>
-                        <Ionicons name={iconaCategoria(cat.nome)} size={11} color="#FFFFFF" />
+              {/* ── Divisione su più categorie ── */}
+              {divisioneDisponibile && (
+                <>
+                  <Text style={stili.etichetta}>Divisione</Text>
+                  <TouchableOpacity
+                    style={[stili.btnRicorrente, divisione && stili.btnRicorrenteAttivo]}
+                    onPress={() => { setDivisione((v) => !v); setRicorrente(false); }}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name={divisione ? 'layers' : 'layers-outline'} size={18} color={divisione ? '#FFF' : t.piuSottile} />
+                    <Text style={[stili.testoToggle, divisione && { color: '#FFF' }]}>
+                      {divisione ? 'Sì — su più categorie' : 'No — una sola categoria'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+
+              {divisione ? (
+                <>
+                  {/* ── Righe di suddivisione ── */}
+                  <Text style={stili.etichetta}>Suddivisione</Text>
+                  {righeDivisione.map((riga) => {
+                    const categoriaRiga = categorie.find((c) => c.id === riga.categoriaId);
+                    const selettoreAperto = rigaSelettoreCategoria === riga.id;
+                    return (
+                      <View key={riga.id}>
+                        <View style={stili.rigaDivisione}>
+                          <TouchableOpacity
+                            style={[stili.selettoreCategoriaRiga, selettoreAperto && { borderColor: t.primario }]}
+                            onPress={() => setRigaSelettoreCategoria(selettoreAperto ? undefined : riga.id)}
+                          >
+                            {categoriaRiga && <View style={[stili.puntoCatPiccolo, { backgroundColor: categoriaRiga.colore }]} />}
+                            <Text style={stili.testoSelettoreCategoriaRiga} numberOfLines={1}>
+                              {categoriaRiga?.nome ?? 'Categoria'}
+                            </Text>
+                            <Ionicons name={selettoreAperto ? 'chevron-up' : 'chevron-down'} size={14} color={t.piuSottile} />
+                          </TouchableOpacity>
+                          <TextInput
+                            style={stili.inputImportoRiga}
+                            value={riga.importo}
+                            onChangeText={(v) => aggiornaRigaDivisione(riga.id, 'importo', v)}
+                            placeholder="0,00"
+                            placeholderTextColor={t.segnaposto}
+                            keyboardType="decimal-pad"
+                          />
+                          {righeDivisione.length > 2 && (
+                            <TouchableOpacity onPress={() => rimuoviRigaDivisione(riga.id)} hitSlop={8}>
+                              <Ionicons name="close-circle-outline" size={20} color={t.uscita} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                        {selettoreAperto && (
+                          <View style={stili.righeCategoria}>
+                            {categorie.map((cat) => (
+                              <TouchableOpacity
+                                key={cat.id}
+                                style={[
+                                  stili.chipCategoria,
+                                  riga.categoriaId === cat.id && { borderColor: cat.colore, borderWidth: 2, backgroundColor: cat.colore + '1A' },
+                                ]}
+                                onPress={() => { aggiornaRigaDivisione(riga.id, 'categoriaId', cat.id); setRigaSelettoreCategoria(undefined); }}
+                              >
+                                <View style={[stili.puntoCat, { backgroundColor: cat.colore }]}>
+                                  <Ionicons name={iconaCategoria(cat.nome)} size={11} color="#FFFFFF" />
+                                </View>
+                                <Text style={stili.testoCat}>{cat.nome}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </View>
+                        )}
                       </View>
-                      <Text style={[stili.testoCat, selezionata && { color: cat.colore, fontWeight: '700' }]}>
-                        {cat.nome}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
+                    );
+                  })}
+
+                  <TouchableOpacity style={stili.btnAggiungiRiga} onPress={aggiungiRigaDivisione}>
+                    <Ionicons name="add-circle-outline" size={18} color={t.primario} />
+                    <Text style={stili.testoAggiungiRiga}>Aggiungi riga</Text>
+                  </TouchableOpacity>
+
+                  <View style={stili.residuoRiga}>
+                    <Ionicons
+                      name={residuoDivisione === 0 ? 'checkmark-circle' : 'alert-circle-outline'}
+                      size={16}
+                      color={residuoDivisione === 0 ? t.entrata : t.uscita}
+                    />
+                    <Text style={[stili.testoResiduo, { color: residuoDivisione === 0 ? t.entrata : t.uscita }]}>
+                      {residuoDivisione === 0 ? 'Somma corrispondente al totale' : `Residuo da assegnare: ${formatEuro(Math.abs(residuoDivisione))}`}
+                    </Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  {/* ── Categoria ── */}
+                  <Text style={stili.etichetta}>Categoria</Text>
+                  {/* A capo invece di scorrimento orizzontale: con molte categorie lo scroll orizzontale
+                      non è scopribile (soprattutto col mouse sul web) e alcune finivano irraggiungibili */}
+                  <View style={stili.righeCategoria}>
+                    {categorie.map((cat) => {
+                      const selezionata = categoriaId === cat.id;
+                      return (
+                        <TouchableOpacity
+                          key={cat.id}
+                          style={[
+                            stili.chipCategoria,
+                            selezionata && { borderColor: cat.colore, borderWidth: 2, backgroundColor: cat.colore + '1A' },
+                          ]}
+                          onPress={() => setCategoriaId(cat.id)}
+                        >
+                          <View style={[stili.puntoCat, { backgroundColor: cat.colore }]}>
+                            <Ionicons name={iconaCategoria(cat.nome)} size={11} color="#FFFFFF" />
+                          </View>
+                          <Text style={[stili.testoCat, selezionata && { color: cat.colore, fontWeight: '700' }]}>
+                            {cat.nome}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
 
               {/* ── Data ── */}
               <Text style={stili.etichetta}>Data</Text>
@@ -397,7 +539,7 @@ export default function TransactionForm({
           />
 
           {/* ── Foto scontrino ── */}
-          {!!onCaricaFoto && !trasferimento && (
+          {!!onCaricaFoto && !trasferimento && !divisione && (
             <>
               <Text style={stili.etichetta}>Foto scontrino (facoltativa)</Text>
               {fotoUri ? (
@@ -423,12 +565,12 @@ export default function TransactionForm({
           )}
 
           {/* ── Ricorrente ── */}
-          {!forzaRicorrente && !trasferimento && (
+          {!forzaRicorrente && !trasferimento && !divisione && (
             <>
               <Text style={stili.etichetta}>Ricorrente</Text>
               <TouchableOpacity
                 style={[stili.btnRicorrente, ricorrente && stili.btnRicorrenteAttivo]}
-                onPress={() => setRicorrente((v) => !v)}
+                onPress={() => { setRicorrente((v) => !v); setDivisione(false); }}
                 activeOpacity={0.7}
               >
                 <Ionicons
@@ -455,10 +597,14 @@ export default function TransactionForm({
 
         {/* ── Pulsante Salva ── */}
         <TouchableOpacity
-          style={[stili.btnSalva, { backgroundColor: coloreAccento }, caricamentoFoto && { opacity: 0.6 }]}
+          style={[
+            stili.btnSalva,
+            { backgroundColor: coloreAccento },
+            (caricamentoFoto || (divisione && !divisioneValida)) && { opacity: 0.6 },
+          ]}
           onPress={gestisciSalva}
           activeOpacity={0.85}
-          disabled={caricamentoFoto}
+          disabled={caricamentoFoto || (divisione && !divisioneValida)}
         >
           <Text style={stili.testoSalva}>
             {caricamentoFoto
@@ -467,7 +613,9 @@ export default function TransactionForm({
                 ? 'Salva modifiche'
                 : trasferimento
                   ? 'Registra trasferimento'
-                  : `Aggiungi ${tipo === 'entrata' ? 'entrata' : 'uscita'}`}
+                  : divisione
+                    ? `Dividi in ${righeDivisione.length} categorie`
+                    : `Aggiungi ${tipo === 'entrata' ? 'entrata' : 'uscita'}`}
           </Text>
         </TouchableOpacity>
 
@@ -700,6 +848,77 @@ function creaStili(t: Tema) {
     btnRicorrenteAttivo: {
       backgroundColor: t.viola,
       borderColor: t.viola,
+    },
+
+    // ── Divisione su più categorie ──
+    rigaDivisione: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: 8,
+    },
+    selettoreCategoriaRiga: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 11,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      backgroundColor: t.carta,
+    },
+    puntoCatPiccolo: {
+      width: 9,
+      height: 9,
+      borderRadius: 5,
+      flexShrink: 0,
+    },
+    testoSelettoreCategoriaRiga: {
+      flex: 1,
+      fontSize: 13,
+      color: t.titolo,
+      fontWeight: '500',
+    },
+    inputImportoRiga: {
+      width: 84,
+      borderWidth: 1.5,
+      borderColor: t.bordo,
+      borderRadius: 10,
+      paddingVertical: 11,
+      paddingHorizontal: 10,
+      fontSize: 14,
+      color: t.titolo,
+      backgroundColor: t.sfondoInput,
+      textAlign: 'right',
+    },
+    btnAggiungiRiga: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 10,
+      marginTop: 4,
+      borderRadius: 10,
+      borderWidth: 1.5,
+      borderStyle: 'dashed',
+      borderColor: t.primario,
+    },
+    testoAggiungiRiga: {
+      fontSize: 13,
+      fontWeight: '600',
+      color: t.primario,
+    },
+    residuoRiga: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: 10,
+    },
+    testoResiduo: {
+      fontSize: 13,
+      fontWeight: '600',
     },
 
     // ── Pulsante salva ──

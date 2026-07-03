@@ -144,7 +144,7 @@ function RigaDettaglioTransazione({
 }
 
 export default function RiepilogoScreen() {
-  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione, aggiungiModelloRicorrente, aggiungiTrasferimento, caricaFotoScontrino } = useFinanceStore();
+  const { transazioni, categorie, istituti, reddito, aggiornaReddito, obiettivi, aggiungiTransazione, aggiungiModelloRicorrente, aggiungiTrasferimento, importaTransazioni, caricaFotoScontrino } = useFinanceStore();
   const { refreshing, onRefresh } = usePullToRefresh();
 
   const t = useTema();
@@ -808,6 +808,7 @@ export default function RiepilogoScreen() {
         onChiudi={() => setModaleNuova(false)}
         onSalva={gestisciSalvaTransazione}
         onSalvaTrasferimento={aggiungiTrasferimento}
+        onSalvaDivisa={importaTransazioni}
         onCaricaFoto={caricaFotoScontrino}
         categorie={categorie}
         istituti={istituti}

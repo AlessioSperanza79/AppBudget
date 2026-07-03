@@ -8,6 +8,7 @@ import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { formatEuro } from '../../utils/formatters';
 import { creaPointerConfig } from '../../utils/pointerConfig';
 import { Categoria, Transazione } from '../../types';
+import SankeyFlusso, { NodoSankey } from './SankeyFlusso';
 
 const MESI       = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 const MESI_BREVI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
@@ -193,6 +194,16 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   const coloreLinea       = saldoFineLinea >= 0 ? t.primario : t.uscita;
   const datiTortaAnno     = datiCategorieAnno.map((d) => ({ value: d.value, color: d.colore, nome: d.nome }));
 
+  // Sankey "Entrate → categorie di spesa + risparmio": visibile solo con avanzo positivo,
+  // altrimenti la conservazione del flusso (entrate = uscite + risparmio) non torna
+  const avanzoMese = totaleEntrateMese - totaleUsciteMese;
+  const destinazioniMese: NodoSankey[] = avanzoMese > 0
+    ? [...datiTorta.map((d) => ({ nome: d.nome, valore: d.value, colore: d.color })), { nome: 'Risparmio', valore: avanzoMese, colore: t.primario }]
+    : [];
+  const destinazioniAnno: NodoSankey[] = saldoAnno > 0
+    ? [...datiTortaAnno.map((d) => ({ nome: d.nome, valore: d.value, colore: d.color })), { nome: 'Risparmio', valore: saldoAnno, colore: t.primario }]
+    : [];
+
   const nomeMesePrec      = MESI[meseSel === 0 ? 11 : meseSel - 1];
   const entrateMesePrec   = transazioniFiltrateMesePrec.filter((tr) => tr.tipo === 'entrata').reduce((s, tr) => s + tr.importo, 0);
   const usciteMesePrec    = transazioniFiltrateMesePrec.filter((tr) => tr.tipo === 'uscita').reduce((s, tr) => s + tr.importo, 0);
@@ -347,6 +358,30 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   setBarraConfrontoMese((prec) => (prec === index ? null : index))
                 }
               />
+            </View>
+          )}
+
+          {/* Flusso del denaro */}
+          {destinazioniMese.length > 0 && (
+            <View style={stili.sezione}>
+              <Text style={stili.titoloSezione}>Flusso del denaro — {MESI[meseSel]}</Text>
+              <View style={stili.centrato}>
+                <SankeyFlusso entrate={totaleEntrateMese} destinazioni={destinazioniMese} t={t} larghezza={LARGHEZZA_CHART} />
+              </View>
+              <View style={stili.legendaTorta}>
+                <View style={stili.voceLegendaTorta}>
+                  <View style={[stili.puntino, { backgroundColor: t.entrata }]} />
+                  <Text style={stili.nomeLegendaTorta}>Entrate</Text>
+                  <Text style={stili.valoreLegendaTorta}>{formatEuro(totaleEntrateMese)}</Text>
+                </View>
+                {destinazioniMese.map((d, i) => (
+                  <View key={i} style={stili.voceLegendaTorta}>
+                    <View style={[stili.puntino, { backgroundColor: d.colore }]} />
+                    <Text style={stili.nomeLegendaTorta} numberOfLines={1}>{d.nome}</Text>
+                    <Text style={stili.valoreLegendaTorta}>{formatEuro(d.valore)}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
@@ -523,6 +558,30 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   setBarraConfrontoAnno((prec) => (prec === index ? null : index))
                 }
               />
+            </View>
+          )}
+
+          {/* Flusso del denaro */}
+          {destinazioniAnno.length > 0 && (
+            <View style={stili.sezione}>
+              <Text style={stili.titoloSezione}>Flusso del denaro — {annoSel}</Text>
+              <View style={stili.centrato}>
+                <SankeyFlusso entrate={totaleEntrateAnno} destinazioni={destinazioniAnno} t={t} larghezza={LARGHEZZA_CHART} />
+              </View>
+              <View style={stili.legendaTorta}>
+                <View style={stili.voceLegendaTorta}>
+                  <View style={[stili.puntino, { backgroundColor: t.entrata }]} />
+                  <Text style={stili.nomeLegendaTorta}>Entrate</Text>
+                  <Text style={stili.valoreLegendaTorta}>{formatEuro(totaleEntrateAnno)}</Text>
+                </View>
+                {destinazioniAnno.map((d, i) => (
+                  <View key={i} style={stili.voceLegendaTorta}>
+                    <View style={[stili.puntino, { backgroundColor: d.colore }]} />
+                    <Text style={stili.nomeLegendaTorta} numberOfLines={1}>{d.nome}</Text>
+                    <Text style={stili.valoreLegendaTorta}>{formatEuro(d.valore)}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
