@@ -366,9 +366,30 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
   },
 
   modificaTransazione: async (id, aggiornamenti) => {
+    // Modificare il modello ricorrente propaga i campi condivisi (non la data, che è
+    // specifica di ogni occorrenza) a tutte le transazioni già generate da esso: altrimenti
+    // il modello in Pianificazione e le occorrenze già create in Riepilogo/Movimenti
+    // finiscono disallineati, come se la modifica non avesse avuto effetto
+    const bersaglio = get().transazioni.find((t) => t.id === id);
+    const CAMPI_CONDIVISI = ['importo', 'tipo', 'categoriaId', 'nota', 'tipologia', 'istitutoId', 'tag'] as const;
+    const aggiornamentiCondivisi: Partial<Omit<Transazione, 'id'>> = {};
+    if (bersaglio?.ricorrente) {
+      for (const campo of CAMPI_CONDIVISI) {
+        if (aggiornamenti[campo] !== undefined) (aggiornamentiCondivisi as Record<string, unknown>)[campo] = aggiornamenti[campo];
+      }
+    }
+    const idFigli = Object.keys(aggiornamentiCondivisi).length > 0
+      ? get().transazioni.filter((t) => t.templateId === id).map((t) => t.id)
+      : [];
+
     set((s) => ({
-      transazioni: s.transazioni.map((t) => t.id === id ? { ...t, ...aggiornamenti } : t),
+      transazioni: s.transazioni.map((t) => {
+        if (t.id === id) return { ...t, ...aggiornamenti };
+        if (idFigli.includes(t.id)) return { ...t, ...aggiornamentiCondivisi };
+        return t;
+      }),
     }));
+
     const dbUpdate: Record<string, unknown> = {};
     if (aggiornamenti.importo     !== undefined) dbUpdate.importo      = aggiornamenti.importo;
     if (aggiornamenti.tipo        !== undefined) dbUpdate.tipo         = aggiornamenti.tipo;
@@ -381,6 +402,18 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
     if (aggiornamenti.tag         !== undefined) dbUpdate.tag          = aggiornamenti.tag;
     if (aggiornamenti.fotoUrl     !== undefined) dbUpdate.foto_url     = aggiornamenti.fotoUrl;
     await supabase.from('transazioni').update(dbUpdate).eq('id', id);
+
+    if (idFigli.length > 0) {
+      const dbUpdateCondiviso: Record<string, unknown> = {};
+      if (aggiornamentiCondivisi.importo     !== undefined) dbUpdateCondiviso.importo      = aggiornamentiCondivisi.importo;
+      if (aggiornamentiCondivisi.tipo        !== undefined) dbUpdateCondiviso.tipo         = aggiornamentiCondivisi.tipo;
+      if (aggiornamentiCondivisi.categoriaId !== undefined) dbUpdateCondiviso.categoria_id = aggiornamentiCondivisi.categoriaId;
+      if (aggiornamentiCondivisi.nota        !== undefined) dbUpdateCondiviso.nota         = aggiornamentiCondivisi.nota;
+      if (aggiornamentiCondivisi.tipologia   !== undefined) dbUpdateCondiviso.tipologia    = aggiornamentiCondivisi.tipologia;
+      if (aggiornamentiCondivisi.istitutoId  !== undefined) dbUpdateCondiviso.istituto_id  = aggiornamentiCondivisi.istitutoId;
+      if (aggiornamentiCondivisi.tag         !== undefined) dbUpdateCondiviso.tag          = aggiornamentiCondivisi.tag;
+      await supabase.from('transazioni').update(dbUpdateCondiviso).in('id', idFigli);
+    }
   },
 
   eliminaTransazione: async (id) => {

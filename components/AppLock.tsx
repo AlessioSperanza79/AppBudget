@@ -1,6 +1,6 @@
 // ── Schermata di blocco a PIN/biometria mostrata sopra tutta l'app quando è attiva ──
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Animated, AppState, Platform, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Text from './TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import * as LocalAuthentication from 'expo-local-authentication';
@@ -46,13 +46,38 @@ export default function AppLock({ bloccato, onSbloccato }: ProprietaAppLock) {
     }
   };
 
-  // Ad ogni ri-comparsa del blocco: pulisce il PIN e propone subito la biometria
+  // Ad ogni ri-comparsa del blocco: pulisce il PIN e propone subito la biometria — ma solo se
+  // l'app è già in primo piano. Il blocco scatta anche nell'istante in cui l'app va in
+  // background (schermo che si spegne): avviare lì la richiesta biometrica nativa la lascia
+  // "appesa" finché l'app non torna attiva, e nel frattempo anche "Riprova" resta bloccato
+  // dalla guardia biometriaInCorso, che non si sblocca mai.
   useEffect(() => {
     if (!bloccato) return;
     setPin('');
     setErrore(false);
-    if (biometriaUtilizzabile) provaBiometria();
+    if (biometriaUtilizzabile && AppState.currentState === 'active') provaBiometria();
   }, [bloccato]);
+
+  // Quando l'app torna in primo piano con il blocco ancora attivo, ripropone la biometria:
+  // copre sia il caso "bloccato durante il background" sopra sia un eventuale tentativo
+  // rimasto appeso, azzerando la guardia prima di riprovare
+  useEffect(() => {
+    if (!biometriaUtilizzabile) return;
+    const sub = AppState.addEventListener('change', (stato) => {
+      if (stato === 'active' && bloccato) {
+        biometriaInCorso.current = false;
+        provaBiometria();
+      }
+    });
+    return () => sub.remove();
+  }, [bloccato, biometriaUtilizzabile]);
+
+  // Tocco esplicito dell'utente su "Riprova" o sul tasto impronta: azzera sempre la guardia,
+  // così un tentativo automatico rimasto appeso non blocca per sempre anche il tentativo manuale
+  const riprovaBiometria = () => {
+    biometriaInCorso.current = false;
+    provaBiometria();
+  };
 
   useEffect(() => {
     if (pin.length < LUNGHEZZA_PIN) return;
@@ -94,7 +119,7 @@ export default function AppLock({ bloccato, onSbloccato }: ProprietaAppLock) {
           </View>
           <Text style={stili.titolo}>Autenticazione richiesta</Text>
           <Text style={stili.sottotitolo}>Usa l'impronta o il Face ID per sbloccare AppBudget</Text>
-          <TouchableOpacity style={stili.btnRiprova} onPress={provaBiometria}>
+          <TouchableOpacity style={stili.btnRiprova} onPress={riprovaBiometria}>
             <Text style={stili.testoBtnRiprova}>Riprova</Text>
           </TouchableOpacity>
         </View>
@@ -123,7 +148,7 @@ export default function AppLock({ bloccato, onSbloccato }: ProprietaAppLock) {
           {TASTI.map((tasto, i) => {
             if (tasto === '') {
               return biometriaUtilizzabile ? (
-                <TouchableOpacity key={i} style={stili.tasto} onPress={provaBiometria}>
+                <TouchableOpacity key={i} style={stili.tasto} onPress={riprovaBiometria}>
                   <Ionicons name="finger-print" size={26} color={t.primario} />
                 </TouchableOpacity>
               ) : (

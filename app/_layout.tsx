@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { AppState, Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import AppLock from '@/components/AppLock';
@@ -104,16 +105,18 @@ function RootLayoutNav() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-        <Stack>
-          {/* headerShown: false → i singoli schermi gestiscono i propri header */}
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        </Stack>
-        <TourIntroduttivo visibile={mostraTour} onChiudi={() => setMostraTour(false)} />
-        <AppLock bloccato={bloccato} onSbloccato={() => { setBloccato(false); segnaSessioneSbloccata(); }} />
-        <NotificheManager />
-        <BarraCaricamento />
-      </ThemeProvider>
+      <SafeAreaProvider>
+        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+          <Stack>
+            {/* headerShown: false → i singoli schermi gestiscono i propri header */}
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          </Stack>
+          <TourIntroduttivo visibile={mostraTour} onChiudi={() => setMostraTour(false)} />
+          <AppLock bloccato={bloccato} onSbloccato={() => { setBloccato(false); segnaSessioneSbloccata(); }} />
+          <NotificheManager />
+          <BarraCaricamento />
+        </ThemeProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
