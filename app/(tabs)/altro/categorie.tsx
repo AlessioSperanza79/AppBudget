@@ -19,7 +19,7 @@ const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo 
 
 const PALETTE: string[] = PALETTE_CATEGORIE;
 
-const TIPI: Array<{ key: TipoCategoria; label: string; colore: string }> = [
+const TIPI: { key: TipoCategoria; label: string; colore: string }[] = [
   { key: 'fissa',        label: 'Fissa',        colore: '#2563EB' },
   { key: 'variabile',    label: 'Variabile',    colore: '#F97316' },
   { key: 'investimento', label: 'Investimento', colore: '#7C3AED' },

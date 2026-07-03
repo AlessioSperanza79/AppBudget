@@ -12,7 +12,7 @@ import PressableScale from '../../components/PressableScale';
 import ImportaCsvModal from './ImportaCsvModal';
 import { useTema, Tema } from '../../constants/tema';
 
-const OPZIONI_TEMA: Array<{ key: PreferenzaTema; label: string; icona: keyof typeof Ionicons.glyphMap }> = [
+const OPZIONI_TEMA: { key: PreferenzaTema; label: string; icona: keyof typeof Ionicons.glyphMap }[] = [
   { key: 'sistema', label: 'Sistema', icona: 'contrast-outline' },
   { key: 'chiaro',  label: 'Chiaro',  icona: 'sunny-outline' },
   { key: 'scuro',   label: 'Scuro',   icona: 'moon-outline' },

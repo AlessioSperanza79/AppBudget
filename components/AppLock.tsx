@@ -118,7 +118,7 @@ export default function AppLock({ bloccato, onSbloccato }: ProprietaAppLock) {
             <Ionicons name="finger-print" size={26} color={t.primario} />
           </View>
           <Text style={stili.titolo}>Autenticazione richiesta</Text>
-          <Text style={stili.sottotitolo}>Usa l'impronta o il Face ID per sbloccare AppBudget</Text>
+          <Text style={stili.sottotitolo}>Usa l&apos;impronta o il Face ID per sbloccare AppBudget</Text>
           <TouchableOpacity style={stili.btnRiprova} onPress={riprovaBiometria}>
             <Text style={stili.testoBtnRiprova}>Riprova</Text>
           </TouchableOpacity>

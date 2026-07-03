@@ -83,7 +83,7 @@ export default function SicurezzaSezione() {
       <View style={stili.riga}>
         <View style={{ flex: 1 }}>
           <Text style={stili.etichettaRiga}>Blocco con PIN</Text>
-          <Text style={stili.descrizioneRiga}>Richiede il PIN all'apertura dell'app</Text>
+          <Text style={stili.descrizioneRiga}>Richiede il PIN all&apos;apertura dell&apos;app</Text>
         </View>
         <Switch value={!!pinHash} onValueChange={gestisciToggleBlocco} trackColor={{ true: t.primario }} />
       </View>
@@ -100,7 +100,7 @@ export default function SicurezzaSezione() {
         <View style={stili.riga}>
           <View style={{ flex: 1 }}>
             <Text style={stili.etichettaRiga}>Sblocco con impronta/Face ID</Text>
-            <Text style={stili.descrizioneRiga}>Richiede la biometria all'apertura dell'app</Text>
+            <Text style={stili.descrizioneRiga}>Richiede la biometria all&apos;apertura dell&apos;app</Text>
           </View>
           <Switch value={biometriaAttiva} onValueChange={gestisciToggleBiometria} trackColor={{ true: t.primario }} />
         </View>

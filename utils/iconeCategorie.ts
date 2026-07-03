@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 type IconaNome = keyof typeof Ionicons.glyphMap;
 
-const REGOLE: Array<{ parole: string[]; icona: IconaNome }> = [
+const REGOLE: { parole: string[]; icona: IconaNome }[] = [
   { parole: ['stipendio', 'salario', 'lavoro'],                     icona: 'cash-outline' },
   { parole: ['entrata', 'extra', 'bonus', 'rimborso'],              icona: 'trending-up-outline' },
   { parole: ['investimento', 'risparmio', 'obiettivo'],             icona: 'trending-up-outline' },
