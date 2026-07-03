@@ -1,7 +1,7 @@
 // ── Diagramma di flusso "a sorgente singola": dalle entrate verso le categorie di spesa + risparmio ──
 // react-native-gifted-charts non supporta i Sankey, quindi si disegna a mano con react-native-svg
 // (già usata direttamente altrove, es. components/illustrazioni/IllustrazioneObiettivo.tsx)
-import { View } from 'react-native';
+import { TouchableOpacity, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { Tema } from '../../constants/tema';
 
@@ -16,6 +16,8 @@ interface Props {
   destinazioni: NodoSankey[]; // categorie di uscita + risparmio, in quest'ordine
   t: Tema;
   larghezza: number;
+  indiceSelezionato?: number | null;
+  onSeleziona?: (indice: number | null) => void;
 }
 
 const LARGHEZZA_NODO = 10;
@@ -23,7 +25,7 @@ const GAP = 5;
 const ALTEZZA_RIGA = 30;
 const ALTEZZA_MINIMA = 160;
 
-export default function SankeyFlusso({ entrate, destinazioni, t, larghezza }: Props) {
+export default function SankeyFlusso({ entrate, destinazioni, t, larghezza, indiceSelezionato, onSeleziona }: Props) {
   if (entrate <= 0 || destinazioni.length === 0) return null;
 
   const altezza = Math.max(ALTEZZA_RIGA * destinazioni.length, ALTEZZA_MINIMA);
@@ -45,33 +47,56 @@ export default function SankeyFlusso({ entrate, destinazioni, t, larghezza }: Pr
   });
 
   return (
-    <View>
+    <View style={{ width: larghezza, height: altezza }}>
       <Svg width={larghezza} height={altezza}>
         <Rect x={0} y={0} width={LARGHEZZA_NODO} height={yLeft} rx={3} fill={t.entrata} />
-        {segmenti.map((s, i) => (
-          <Path
-            key={`banda-${i}`}
-            d={`M ${LARGHEZZA_NODO} ${s.y0Left}
-                C ${midX} ${s.y0Left}, ${midX} ${s.y0Right}, ${xDestinazione} ${s.y0Right}
-                L ${xDestinazione} ${s.y1Right}
-                C ${midX} ${s.y1Right}, ${midX} ${s.y1Left}, ${LARGHEZZA_NODO} ${s.y1Left}
-                Z`}
-            fill={s.nodo.colore}
-            fillOpacity={0.4}
-          />
-        ))}
-        {segmenti.map((s, i) => (
-          <Rect
-            key={`nodo-${i}`}
-            x={xDestinazione}
-            y={s.y0Right}
-            width={LARGHEZZA_NODO}
-            height={s.y1Right - s.y0Right}
-            rx={3}
-            fill={s.nodo.colore}
-          />
-        ))}
+        {segmenti.map((s, i) => {
+          const attenuata = indiceSelezionato != null && indiceSelezionato !== i;
+          return (
+            <Path
+              key={`banda-${i}`}
+              d={`M ${LARGHEZZA_NODO} ${s.y0Left}
+                  C ${midX} ${s.y0Left}, ${midX} ${s.y0Right}, ${xDestinazione} ${s.y0Right}
+                  L ${xDestinazione} ${s.y1Right}
+                  C ${midX} ${s.y1Right}, ${midX} ${s.y1Left}, ${LARGHEZZA_NODO} ${s.y1Left}
+                  Z`}
+              fill={s.nodo.colore}
+              fillOpacity={attenuata ? 0.12 : 0.4}
+            />
+          );
+        })}
+        {segmenti.map((s, i) => {
+          const attenuata = indiceSelezionato != null && indiceSelezionato !== i;
+          return (
+            <Rect
+              key={`nodo-${i}`}
+              x={xDestinazione}
+              y={s.y0Right}
+              width={LARGHEZZA_NODO}
+              height={s.y1Right - s.y0Right}
+              rx={3}
+              fill={s.nodo.colore}
+              opacity={attenuata ? 0.35 : 1}
+            />
+          );
+        })}
       </Svg>
+      {/* Overlay di tocco: strisce trasparenti sovrapposte all'SVG, una per banda. Più
+          affidabile di un onPress diretto su Path/Rect (react-native-svg non lo supporta
+          in modo pulito su web) e la forma rettangolare copre comunque l'intera banda,
+          dato che ogni segmento occupa una fascia verticale esclusiva */}
+      {segmenti.map((s, i) => {
+        const yMin = Math.min(s.y0Left, s.y0Right);
+        const yMax = Math.max(s.y1Left, s.y1Right);
+        return (
+          <TouchableOpacity
+            key={`tocco-${i}`}
+            style={{ position: 'absolute', left: 0, top: yMin, width: larghezza, height: yMax - yMin }}
+            activeOpacity={1}
+            onPress={() => onSeleziona?.(indiceSelezionato === i ? null : i)}
+          />
+        );
+      })}
     </View>
   );
 }

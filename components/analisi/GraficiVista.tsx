@@ -35,6 +35,9 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   // Indice della barra toccata nei vari istogrammi — null quando nessuna è selezionata
   const [barraConfrontoMese, setBarraConfrontoMese]   = useState<number | null>(null);
   const [barraConfrontoAnno, setBarraConfrontoAnno]   = useState<number | null>(null);
+  const [barraSettimanale, setBarraSettimanale]       = useState<number | null>(null);
+  const [sankeyMese, setSankeyMese] = useState<number | null>(null);
+  const [sankeyAnno, setSankeyAnno] = useState<number | null>(null);
 
   const { width: LARGHEZZA } = useWindowDimensions();
   // margini sezione (16×2=32) + padding sezione (20×2=40) + asse-y gifted-charts (35) = 107
@@ -69,8 +72,8 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   );
 
   // Deselezionare la fetta/barra quando cambia il periodo, altrimenti l'indice punterebbe a un altro dato
-  useEffect(() => { setFocoTortaMese(null); setBarraConfrontoMese(null); }, [annoSel, meseSel]);
-  useEffect(() => { setFocoTortaAnno(null); setBarraConfrontoAnno(null); }, [annoSel]);
+  useEffect(() => { setFocoTortaMese(null); setBarraConfrontoMese(null); setBarraSettimanale(null); setSankeyMese(null); }, [annoSel, meseSel]);
+  useEffect(() => { setFocoTortaAnno(null); setBarraConfrontoAnno(null); setSankeyAnno(null); }, [annoSel]);
 
   const chiaveMese = `${annoSel}-${String(meseSel + 1).padStart(2, '0')}`;
 
@@ -155,6 +158,10 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
       { value: Math.abs(saldo), frontColor: saldo >= 0 ? t.primario : t.arancio, spacing: 14 },
     ];
   });
+  // Etichette per il callout al tocco di una barra, nello stesso ordine delle 3 barre per settimana
+  const etichetteSettimanali = datiSettimanali.flatMap((s) => [
+    `Entrate — ${s.label}`, `Uscite — ${s.label}`, `Saldo — ${s.label}`,
+  ]);
   const larghezzaSettimane = Math.max(LARGHEZZA_CHART, datiSettimanali.length * 54 + 40);
 
   const annoPrecTotali = useMemo(() => {
@@ -349,7 +356,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                 barWidth={26}
                 barBorderRadius={4}
                 yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
-                yAxisWidth={35}
+                yAxisLabelWidth={35}
                 noOfSections={4}
                 hideRules
                 width={LARGHEZZA_CHART}
@@ -365,8 +372,25 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
           {destinazioniMese.length > 0 && (
             <View style={stili.sezione}>
               <Text style={stili.titoloSezione}>Flusso del denaro — {MESI[meseSel]}</Text>
+              <Text style={stili.spiegazioneSankey}>
+                Da sinistra (Entrate) a destra: ogni banda è larga quanto la quota che va a una categoria o al risparmio. Tocca una banda o una voce sotto per il dettaglio.
+              </Text>
+              {sankeyMese != null && (
+                <Text style={stili.calloutBarra}>
+                  {destinazioniMese[sankeyMese].nome}: <Text style={stili.calloutBarraValore}>
+                    {formatEuro(destinazioniMese[sankeyMese].valore)} · {Math.round((destinazioniMese[sankeyMese].valore / totaleEntrateMese) * 100)}% delle entrate
+                  </Text>
+                </Text>
+              )}
               <View style={stili.centrato}>
-                <SankeyFlusso entrate={totaleEntrateMese} destinazioni={destinazioniMese} t={t} larghezza={LARGHEZZA_CHART} />
+                <SankeyFlusso
+                  entrate={totaleEntrateMese}
+                  destinazioni={destinazioniMese}
+                  t={t}
+                  larghezza={LARGHEZZA_CHART}
+                  indiceSelezionato={sankeyMese}
+                  onSeleziona={setSankeyMese}
+                />
               </View>
               <View style={stili.legendaTorta}>
                 <View style={stili.voceLegendaTorta}>
@@ -375,11 +399,16 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   <Text style={stili.valoreLegendaTorta}>{formatEuro(totaleEntrateMese)}</Text>
                 </View>
                 {destinazioniMese.map((d, i) => (
-                  <View key={i} style={stili.voceLegendaTorta}>
+                  <TouchableOpacity
+                    key={i}
+                    activeOpacity={0.6}
+                    style={stili.voceLegendaTorta}
+                    onPress={() => setSankeyMese((prec) => (prec === i ? null : i))}
+                  >
                     <View style={[stili.puntino, { backgroundColor: d.colore }]} />
-                    <Text style={stili.nomeLegendaTorta} numberOfLines={1}>{d.nome}</Text>
+                    <Text style={[stili.nomeLegendaTorta, i === sankeyMese && { fontWeight: '700', color: t.titolo }]} numberOfLines={1}>{d.nome}</Text>
                     <Text style={stili.valoreLegendaTorta}>{formatEuro(d.valore)}</Text>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
@@ -402,6 +431,11 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   </View>
                 ))}
               </View>
+              <Text style={stili.calloutBarra}>
+                {barraSettimanale != null
+                  ? <>{etichetteSettimanali[barraSettimanale]}: <Text style={stili.calloutBarraValore}>{formatEuro(datiSettimanaliGruppati[barraSettimanale].value)}</Text></>
+                  : 'Tocca una barra per il valore esatto'}
+              </Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <BarChart
                   data={datiSettimanaliGruppati}
@@ -409,11 +443,14 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   labelWidth={48}
                   barBorderRadius={4}
                   yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
-                  yAxisWidth={35}
+                  yAxisLabelWidth={35}
                   noOfSections={4}
                   hideRules
                   width={larghezzaSettimane}
                   disableScroll
+                  onPress={(_item: unknown, index: number) =>
+                    setBarraSettimanale((prec) => (prec === index ? null : index))
+                  }
                 />
               </ScrollView>
             </View>
@@ -549,7 +586,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                 barWidth={28}
                 barBorderRadius={4}
                 yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
-                yAxisWidth={35}
+                yAxisLabelWidth={35}
                 noOfSections={4}
                 hideRules
                 width={LARGHEZZA_CHART}
@@ -565,8 +602,25 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
           {destinazioniAnno.length > 0 && (
             <View style={stili.sezione}>
               <Text style={stili.titoloSezione}>Flusso del denaro — {annoSel}</Text>
+              <Text style={stili.spiegazioneSankey}>
+                Da sinistra (Entrate) a destra: ogni banda è larga quanto la quota che va a una categoria o al risparmio. Tocca una banda o una voce sotto per il dettaglio.
+              </Text>
+              {sankeyAnno != null && (
+                <Text style={stili.calloutBarra}>
+                  {destinazioniAnno[sankeyAnno].nome}: <Text style={stili.calloutBarraValore}>
+                    {formatEuro(destinazioniAnno[sankeyAnno].valore)} · {Math.round((destinazioniAnno[sankeyAnno].valore / totaleEntrateAnno) * 100)}% delle entrate
+                  </Text>
+                </Text>
+              )}
               <View style={stili.centrato}>
-                <SankeyFlusso entrate={totaleEntrateAnno} destinazioni={destinazioniAnno} t={t} larghezza={LARGHEZZA_CHART} />
+                <SankeyFlusso
+                  entrate={totaleEntrateAnno}
+                  destinazioni={destinazioniAnno}
+                  t={t}
+                  larghezza={LARGHEZZA_CHART}
+                  indiceSelezionato={sankeyAnno}
+                  onSeleziona={setSankeyAnno}
+                />
               </View>
               <View style={stili.legendaTorta}>
                 <View style={stili.voceLegendaTorta}>
@@ -575,11 +629,16 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
                   <Text style={stili.valoreLegendaTorta}>{formatEuro(totaleEntrateAnno)}</Text>
                 </View>
                 {destinazioniAnno.map((d, i) => (
-                  <View key={i} style={stili.voceLegendaTorta}>
+                  <TouchableOpacity
+                    key={i}
+                    activeOpacity={0.6}
+                    style={stili.voceLegendaTorta}
+                    onPress={() => setSankeyAnno((prec) => (prec === i ? null : i))}
+                  >
                     <View style={[stili.puntino, { backgroundColor: d.colore }]} />
-                    <Text style={stili.nomeLegendaTorta} numberOfLines={1}>{d.nome}</Text>
+                    <Text style={[stili.nomeLegendaTorta, i === sankeyAnno && { fontWeight: '700', color: t.titolo }]} numberOfLines={1}>{d.nome}</Text>
                     <Text style={stili.valoreLegendaTorta}>{formatEuro(d.valore)}</Text>
-                  </View>
+                  </TouchableOpacity>
                 ))}
               </View>
             </View>
@@ -745,6 +804,12 @@ function creaStili(t: Tema) {
       color: t.piuSottile,
       marginTop: 2,
       marginBottom: 8,
+    },
+    spiegazioneSankey: {
+      fontSize: 12,
+      color: t.piuSottile,
+      lineHeight: 17,
+      marginBottom: 10,
     },
     legendaTorta: {
       gap: 8,

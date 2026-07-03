@@ -636,7 +636,7 @@ export default function RiepilogoScreen() {
             <LineChart
               data={ultimi6MesiSaldi}
               width={LARGHEZZA - 104}
-              yAxisWidth={35}
+              yAxisLabelWidth={35}
               height={90}
               areaChart
               color={t.primario}
