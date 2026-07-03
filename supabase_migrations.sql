@@ -31,3 +31,26 @@ ALTER PUBLICATION supabase_realtime ADD TABLE obiettivi;
 
 -- ── 4. Piano a somma zero: rollover dell'avanzo di budget tra un mese e l'altro ──
 ALTER TABLE categorie ADD COLUMN IF NOT EXISTS rollover boolean NOT NULL DEFAULT false;
+
+-- ── 5. Patrimonio netto: beni/debiti manuali + storico mensile ──
+CREATE TABLE IF NOT EXISTS patrimonio_voci (
+  id text PRIMARY KEY,
+  nome text NOT NULL,
+  tipo text NOT NULL CHECK (tipo IN ('attivo', 'passivo')),
+  valore numeric NOT NULL DEFAULT 0,
+  colore text NOT NULL DEFAULT '#2563EB',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE patrimonio_voci ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Consenti tutto su patrimonio_voci" ON patrimonio_voci
+  FOR ALL USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE patrimonio_voci;
+
+CREATE TABLE IF NOT EXISTS patrimonio_storico (
+  data text PRIMARY KEY,  -- 'YYYY-MM'
+  valore numeric NOT NULL
+);
+ALTER TABLE patrimonio_storico ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Consenti tutto su patrimonio_storico" ON patrimonio_storico
+  FOR ALL USING (true) WITH CHECK (true);
+ALTER PUBLICATION supabase_realtime ADD TABLE patrimonio_storico;

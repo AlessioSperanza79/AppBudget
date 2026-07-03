@@ -27,6 +27,21 @@ export interface Istituto {
   nome: string;
 }
 
+/** Una voce del patrimonio netto: un bene (attivo) o un debito (passivo) inserito a mano */
+export interface VocePatrimonio {
+  id: string;
+  nome: string;              // es. "Casa Cagliari", "Mutuo casa"
+  tipo: 'attivo' | 'passivo';
+  valore: number;            // sempre positivo; il segno si applica in base al tipo
+  colore: string;            // colore esadecimale per la UI
+}
+
+/** Fotografia mensile del patrimonio netto totale, per il grafico di andamento nel tempo */
+export interface SnapshotPatrimonio {
+  data: string;   // "YYYY-MM"
+  valore: number; // patrimonio netto totale in quel mese
+}
+
 /** Un obiettivo di risparmio (es. "Vacanza", "Fondo emergenza") */
 export interface Obiettivo {
   id: string;

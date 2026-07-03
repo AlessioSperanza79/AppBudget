@@ -14,6 +14,7 @@ const VOCI: { chiave: string; titolo: string; sottotitolo: string; icona: Ionico
   { chiave: 'impostazioni', titolo: 'Impostazioni', sottotitolo: 'Tema, notifiche, sicurezza, backup', icona: 'settings-outline', rotta: '/altro/impostazioni' },
   { chiave: 'categorie',    titolo: 'Categorie',     sottotitolo: 'Gestisci le categorie di spesa e i budget', icona: 'pricetags-outline', rotta: '/altro/categorie' },
   { chiave: 'conti',        titolo: 'Conti & Istituti', sottotitolo: 'Banche, carte e conti collegati', icona: 'business-outline', rotta: '/altro/conti' },
+  { chiave: 'patrimonio',   titolo: 'Patrimonio',    sottotitolo: 'Beni, debiti e andamento nel tempo', icona: 'trending-up-outline', rotta: '/altro/patrimonio' },
   { chiave: 'guida',        titolo: 'Guida',         sottotitolo: "Come funziona ogni parte dell'app", icona: 'help-circle-outline', rotta: '/altro/guida' },
 ];
 

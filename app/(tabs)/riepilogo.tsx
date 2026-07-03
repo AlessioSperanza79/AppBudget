@@ -23,6 +23,7 @@ import { esportaFile } from '../../utils/exportFile';
 import { formatEuro, formatData, oggiIso } from '../../utils/formatters';
 import { iconaCategoria } from '../../utils/iconeCategorie';
 import { classificaAvanzo } from '../../utils/livelloRisparmio';
+import { calcolaRigheBudget } from '../../utils/budget';
 
 type Periodo = 'mensile' | 'annuale';
 
@@ -309,6 +310,30 @@ export default function RiepilogoScreen() {
       .sort((a, b) => a.giorno - b.giorno);
   }, [transazioni, periodo, dataCorrente]);
 
+  // "Disponibile oggi" (stile PocketGuard "In My Pocket"): quanto puoi spendere liberamente
+  // ora senza intaccare soldi già impegnati. Parte dall'avanzo attuale (reddito meno quanto
+  // già speso questo mese) e sottrae due cose non ancora "spese" ma già impegnate:
+  // - le ricorrenze manuali (senza data fine) ancora da applicare questo mese: quelle CON data
+  //   fine hanno già una transazione reale generata alla creazione, quindi sono già dentro
+  //   l'avanzo e sottrarle di nuovo le conterebbe due volte;
+  // - il budget assegnato ma non ancora speso nelle categorie pianificate (Pianifica → Budget).
+  const disponibileOggi = useMemo(() => {
+    const oggi = new Date();
+    const isMeseCorrente = periodo === 'mensile'
+      && dataCorrente.getFullYear() === oggi.getFullYear()
+      && dataCorrente.getMonth() === oggi.getMonth();
+    if (!isMeseCorrente || reddito <= 0) return null;
+
+    const ricorrenzeDaPagare = prossimeRicorrenze
+      .filter(({ transazione }) => transazione.tipo === 'uscita' && !transazione.dataFine)
+      .reduce((s, { transazione }) => s + transazione.importo, 0);
+
+    const budgetNonSpeso = calcolaRigheBudget(transazioni, categorie, dataCorrente.getFullYear(), dataCorrente.getMonth())
+      .reduce((s, r) => s + Math.max(r.disponibile, 0), 0);
+
+    return avanzo - ricorrenzeDaPagare - budgetNonSpeso;
+  }, [periodo, dataCorrente, reddito, prossimeRicorrenze, avanzo, transazioni, categorie]);
+
   // ── Statistiche avanzate ──
 
   // Giorni trascorsi nel periodo selezionato (usati come denominatore della media giornaliera)
@@ -496,6 +521,24 @@ export default function RiepilogoScreen() {
             </View>
           </LinearGradient>
         </FadeInView>
+
+        {/* ── Disponibile oggi ── */}
+        {disponibileOggi != null && (
+          <FadeInView ritardo={40} style={stili.disponibileCard}>
+            <View style={stili.disponibileIcona}>
+              <Ionicons name="wallet-outline" size={18} color={disponibileOggi >= 0 ? t.primario : t.uscita} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={stili.disponibileEtichetta}>Disponibile oggi</Text>
+              <Text style={stili.disponibileSottotitolo}>Al netto di budget e pagamenti ancora da fare</Text>
+            </View>
+            <CountUpText
+              valore={disponibileOggi}
+              formatta={formatEuro}
+              style={[stili.disponibileValore, { color: disponibileOggi >= 0 ? t.entrata : t.uscita }]}
+            />
+          </FadeInView>
+        )}
 
         {/* ── Cruscotto flusso ── */}
         <FadeInView ritardo={80} style={stili.cruscotto}>
@@ -955,6 +998,46 @@ function creaStili(t: Tema) {
       color: '#FFF',
       fontSize: 17,
       fontWeight: '700',
+      fontFamily: FONT_ESPRESSIVO,
+    },
+
+    // ── Disponibile oggi ──
+    disponibileCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginBottom: 8,
+      borderRadius: 20,
+      padding: 16,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    disponibileIcona: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: t.primarioSfondo,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    disponibileEtichetta: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    disponibileSottotitolo: {
+      fontSize: 11,
+      color: t.piuSottile,
+      marginTop: 1,
+    },
+    disponibileValore: {
+      fontSize: 17,
+      fontWeight: '800',
       fontFamily: FONT_ESPRESSIVO,
     },
 

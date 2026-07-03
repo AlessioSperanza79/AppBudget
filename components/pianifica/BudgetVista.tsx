@@ -4,9 +4,10 @@ import { View, FlatList, TouchableOpacity, TextInput, StyleSheet, Platform, Refr
 import Text from '../TestoBase';
 import { Ionicons } from '@expo/vector-icons';
 import { useFinanceStore } from '../../store/useFinanceStore';
-import { Categoria, Transazione } from '../../types';
+import { Categoria } from '../../types';
 import { formatEuro } from '../../utils/formatters';
 import { iconaCategoria } from '../../utils/iconeCategorie';
+import { calcolaRigheBudget } from '../../utils/budget';
 import EmptyState from '../EmptyState';
 import PressableScale from '../PressableScale';
 import BottomSheet from '../BottomSheet';
@@ -20,17 +21,6 @@ const MESI = [
   'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
   'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
 ];
-
-// Somma le uscite non ricorrenti di una categoria in un dato mese
-function speseCategoriaMese(transazioni: Transazione[], categoriaId: string, anno: number, mese: number): number {
-  let totale = 0;
-  for (const tr of transazioni) {
-    if (tr.tipo !== 'uscita' || tr.ricorrente || tr.categoriaId !== categoriaId) continue;
-    const d = new Date(tr.data + 'T00:00:00');
-    if (d.getFullYear() === anno && d.getMonth() === mese) totale += tr.importo;
-  }
-  return totale;
-}
 
 export default function BudgetVista() {
   const { transazioni, categorie, reddito, aggiornaBudgetCategoria, aggiornaRolloverCategoria } = useFinanceStore();
@@ -62,22 +52,10 @@ export default function BudgetVista() {
     [categorie]
   );
 
-  // L'avanzo si guarda un solo mese indietro (non si accumula su più mesi), applicando
-  // il budget attuale anche al mese precedente: è una stima, non una contabilità storica esatta
-  const righe = useMemo(() => categorieBudget.map((cat) => {
-    const assegnato = cat.budgetMensile ?? 0;
-    const speso = speseCategoriaMese(transazioni, cat.id, anno, mese);
-
-    let avanzoPrecedente = 0;
-    if (cat.rollover) {
-      let mesePrec = mese - 1, annoPrec = anno;
-      if (mesePrec < 0) { mesePrec = 11; annoPrec -= 1; }
-      avanzoPrecedente = assegnato - speseCategoriaMese(transazioni, cat.id, annoPrec, mesePrec);
-    }
-
-    const disponibileTotale = assegnato + avanzoPrecedente;
-    return { categoria: cat, assegnato, speso, avanzoPrecedente, disponibile: disponibileTotale - speso };
-  }), [categorieBudget, transazioni, anno, mese]);
+  const righe = useMemo(
+    () => calcolaRigheBudget(transazioni, categorie, anno, mese),
+    [transazioni, categorie, anno, mese],
+  );
 
   const totaleAssegnato = categorieBudget.reduce((s, c) => s + (c.budgetMensile ?? 0), 0);
   const daAssegnare = reddito - totaleAssegnato;

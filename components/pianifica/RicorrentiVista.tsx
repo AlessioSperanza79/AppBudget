@@ -14,6 +14,7 @@ import PressableScale from '../../components/PressableScale';
 import ConfermaDialog from '../../components/ConfermaDialog';
 import { useTema, Tema } from '../../constants/tema';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
+import { rilevaAbbonamenti, CandidatoAbbonamento } from '../../utils/rilevaAbbonamenti';
 
 // Sul web mostra un'etichetta al passaggio del mouse; su native viene ignorata
 const suggerimento = (testo: string) => (Platform.OS === 'web' ? { title: testo } : {});
@@ -42,11 +43,40 @@ export default function RicorrentiVista() {
   const [applicando, setApplicando]                         = useState(false);
   const [modelloDaEliminare, setModelloDaEliminare]         = useState<string | undefined>();
   const [mostraConfermaApplica, setMostraConfermaApplica]   = useState(false);
+  const [abbonamentoSelezionato, setAbbonamentoSelezionato] = useState<CandidatoAbbonamento | undefined>();
 
   const ricorrenti = useMemo(
     () => transazioni.filter((tr) => tr.ricorrente),
     [transazioni],
   );
+
+  const abbonamentiRilevati = useMemo(() => rilevaAbbonamenti(transazioni), [transazioni]);
+
+  // Crea il modello ricorrente a partire dal mese prossimo (non da subito), per non generare
+  // una transazione duplicata nel mese in cui l'abbonamento era già stato registrato a mano;
+  // il giorno del mese ricalca l'ultima occorrenza rilevata, la ricorrenza dura un anno
+  const confermaAbbonamento = () => {
+    if (!abbonamentoSelezionato) return;
+    const oggi = new Date();
+    const prossimoMese = new Date(oggi.getFullYear(), oggi.getMonth() + 1, 1);
+    const giornoStorico = new Date(abbonamentoSelezionato.ultimaData + 'T00:00:00').getDate();
+    const maxGiorno = new Date(prossimoMese.getFullYear(), prossimoMese.getMonth() + 1, 0).getDate();
+    const gg = String(Math.min(giornoStorico, maxGiorno)).padStart(2, '0');
+    const mm = String(prossimoMese.getMonth() + 1).padStart(2, '0');
+    const dataInizio = `${prossimoMese.getFullYear()}-${mm}-${gg}`;
+    const fine = new Date(prossimoMese);
+    fine.setFullYear(fine.getFullYear() + 1);
+
+    aggiungiModelloRicorrente({
+      importo: Math.round(abbonamentoSelezionato.importoMedio * 100) / 100,
+      tipo: 'uscita',
+      categoriaId: abbonamentoSelezionato.categoriaId,
+      data: dataInizio,
+      nota: abbonamentoSelezionato.nota,
+      dataFine: fine.toISOString().slice(0, 10),
+    });
+    setAbbonamentoSelezionato(undefined);
+  };
 
   // Modelli senza dataFine: richiedono ancora applicazione manuale
   const ricorrentiManuali = useMemo(
@@ -111,6 +141,38 @@ export default function RicorrentiVista() {
                 -{formatEuro(totaleUscite)}
               </Text>
             </View>
+          </FadeInView>
+        )}
+
+        {/* ── Abbonamenti rilevati automaticamente ── */}
+        {abbonamentiRilevati.length > 0 && (
+          <FadeInView style={stili.sezioneAbbonamenti}>
+            <View style={stili.intestazioneAbbonamenti}>
+              <Ionicons name="sparkles-outline" size={16} color={t.viola} />
+              <Text style={stili.titoloAbbonamenti}>Sembrano abbonamenti</Text>
+            </View>
+            <Text style={stili.descrizioneAbbonamenti}>
+              Spese ripetute che potrebbero essere ricorrenti. Toccane una per non doverla più inserire a mano.
+            </Text>
+            {abbonamentiRilevati.map((c) => {
+              const categoria = categorie.find((cat) => cat.id === c.categoriaId);
+              return (
+                <PressableScale
+                  key={c.chiave}
+                  style={stili.rigaAbbonamento}
+                  onPress={() => setAbbonamentoSelezionato(c)}
+                >
+                  <View style={[stili.pallinoAbbonamento, { backgroundColor: categoria?.colore ?? t.piuSottile }]} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={stili.nomeAbbonamento} numberOfLines={1}>{c.nota}</Text>
+                    <Text style={stili.dettaglioAbbonamento}>
+                      {categoria?.nome ?? '—'} · {c.occorrenze} volte negli ultimi mesi
+                    </Text>
+                  </View>
+                  <Text style={stili.importoAbbonamento}>{formatEuro(c.importoMedio)}</Text>
+                </PressableScale>
+              );
+            })}
           </FadeInView>
         )}
 
@@ -233,6 +295,22 @@ export default function RicorrentiVista() {
         testoConferma="Applica"
         onConferma={eseguiApplica}
       />
+
+      {/* ── Conferma marca abbonamento come ricorrente ── */}
+      <ConfermaDialog
+        visibile={!!abbonamentoSelezionato}
+        onChiudi={() => setAbbonamentoSelezionato(undefined)}
+        titolo="Marca come ricorrente"
+        messaggio={
+          abbonamentoSelezionato
+            ? `Da ${MESI[(new Date().getMonth() + 1) % 12]} verrà creata automaticamente ogni mese una transazione di ${formatEuro(abbonamentoSelezionato.importoMedio)} per "${abbonamentoSelezionato.nota}". Le transazioni già inserite a mano restano invariate.`
+            : ''
+        }
+        icona="sparkles-outline"
+        pericoloso={false}
+        testoConferma="Conferma"
+        onConferma={confermaAbbonamento}
+      />
     </View>
   );
 }
@@ -269,6 +347,64 @@ function creaStili(t: Tema) {
     valoreRiepilogo: {
       fontSize: 18,
       fontWeight: '800',
+    },
+
+    // ── Abbonamenti rilevati ──
+    sezioneAbbonamenti: {
+      backgroundColor: t.carta,
+      marginHorizontal: 16,
+      marginTop: 12,
+      borderRadius: 20,
+      padding: 16,
+      gap: 10,
+      shadowColor: t.ombra,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    intestazioneAbbonamenti: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    titoloAbbonamenti: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: t.titolo,
+    },
+    descrizioneAbbonamenti: {
+      fontSize: 12,
+      color: t.piuSottile,
+      lineHeight: 17,
+      marginTop: -4,
+    },
+    rigaAbbonamento: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      paddingVertical: 8,
+    },
+    pallinoAbbonamento: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      flexShrink: 0,
+    },
+    nomeAbbonamento: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: t.titolo,
+    },
+    dettaglioAbbonamento: {
+      fontSize: 11,
+      color: t.piuSottile,
+      marginTop: 1,
+    },
+    importoAbbonamento: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: t.uscita,
     },
 
     // ── Etichetta sezione ──

@@ -33,7 +33,6 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
 
   // Indice della barra toccata nei vari istogrammi — null quando nessuna è selezionata
   const [barraConfrontoMese, setBarraConfrontoMese]   = useState<number | null>(null);
-  const [barraSettimanale, setBarraSettimanale]       = useState<number | null>(null);
   const [barraConfrontoAnno, setBarraConfrontoAnno]   = useState<number | null>(null);
 
   const { width: LARGHEZZA } = useWindowDimensions();
@@ -69,7 +68,7 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
   );
 
   // Deselezionare la fetta/barra quando cambia il periodo, altrimenti l'indice punterebbe a un altro dato
-  useEffect(() => { setFocoTortaMese(null); setBarraConfrontoMese(null); setBarraSettimanale(null); }, [annoSel, meseSel]);
+  useEffect(() => { setFocoTortaMese(null); setBarraConfrontoMese(null); }, [annoSel, meseSel]);
   useEffect(() => { setFocoTortaAnno(null); setBarraConfrontoAnno(null); }, [annoSel]);
 
   const chiaveMese = `${annoSel}-${String(meseSel + 1).padStart(2, '0')}`;
@@ -123,6 +122,8 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
     [transazioni, chiaveMesePrec],
   );
 
+  // Entrate/uscite/saldo per settimana del mese — stesso pattern di "datiGruppati" per l'anno,
+  // così il cash flow si legge in un colpo d'occhio anche a livello di singola settimana
   const datiSettimanali = useMemo(() => {
     const giorni = new Date(annoSel, meseSel + 1, 0).getDate();
     return [
@@ -132,18 +133,28 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
       { label: 'Sett 4', da: 22, a: giorni },
     ]
       .filter((s) => s.da <= giorni)
-      .map((s) => ({
-        value: transazioniFiltrateMese
-          .filter((tr) => {
-            const g = parseInt(tr.data.slice(8), 10);
-            return tr.tipo === 'uscita' && g >= s.da && g <= s.a;
-          })
-          .reduce((acc, tr) => acc + tr.importo, 0),
-        label: s.label,
-        frontColor: t.viola,
-        labelTextStyle: { fontSize: 9, color: t.piuSottile },
-      }));
-  }, [transazioniFiltrateMese, annoSel, meseSel, t]);
+      .map((s) => {
+        const ts = transazioniFiltrateMese.filter((tr) => {
+          const g = parseInt(tr.data.slice(8), 10);
+          return g >= s.da && g <= s.a;
+        });
+        return {
+          label: s.label,
+          entrate: ts.filter((tr) => tr.tipo === 'entrata').reduce((acc, tr) => acc + tr.importo, 0),
+          uscite:  ts.filter((tr) => tr.tipo === 'uscita').reduce((acc, tr) => acc + tr.importo, 0),
+        };
+      });
+  }, [transazioniFiltrateMese, annoSel, meseSel]);
+
+  const datiSettimanaliGruppati = datiSettimanali.flatMap((s) => {
+    const saldo = s.entrate - s.uscite;
+    return [
+      { value: s.entrate, frontColor: t.entrata, label: s.label, labelTextStyle: { fontSize: 9, color: t.piuSottile }, spacing: 2 },
+      { value: s.uscite,  frontColor: t.uscita,  spacing: 2 },
+      { value: Math.abs(saldo), frontColor: saldo >= 0 ? t.primario : t.arancio, spacing: 14 },
+    ];
+  });
+  const larghezzaSettimane = Math.max(LARGHEZZA_CHART, datiSettimanali.length * 54 + 40);
 
   const annoPrecTotali = useMemo(() => {
     const ts = transazioni.filter((tr) => !tr.ricorrente && !tr.trasferimento && tr.data.startsWith(String(annoSel - 1)));
@@ -339,29 +350,37 @@ export default function GraficiVista({ transazioni, categorie, t, vista, anno, m
             </View>
           )}
 
-          {/* Andamento settimanale */}
-          {datiSettimanali.some((d) => d.value > 0) && (
+          {/* Cash flow settimanale */}
+          {datiSettimanali.some((d) => d.entrate > 0 || d.uscite > 0) && (
             <View style={stili.sezione}>
-              <Text style={stili.titoloSezione}>Spesa settimanale — {MESI[meseSel]}</Text>
-              {barraSettimanale != null && (
-                <Text style={stili.calloutBarra}>
-                  {datiSettimanali[barraSettimanale].label}: <Text style={stili.calloutBarraValore}>{formatEuro(datiSettimanali[barraSettimanale].value)}</Text>
-                </Text>
-              )}
-              <BarChart
-                data={datiSettimanali}
-                barWidth={Math.floor((LARGHEZZA_CHART - 50) / 4)}
-                barBorderRadius={8}
-                yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
-                yAxisWidth={35}
-                noOfSections={4}
-                hideRules
-                width={LARGHEZZA_CHART}
-                disableScroll
-                onPress={(_item: unknown, index: number) =>
-                  setBarraSettimanale((prec) => (prec === index ? null : index))
-                }
-              />
+              <Text style={stili.titoloSezione}>Cash flow settimanale — {MESI[meseSel]}</Text>
+              <View style={stili.legenda}>
+                {([
+                  [t.entrata,  'Entrate'],
+                  [t.uscita,   'Uscite'],
+                  [t.primario, 'Saldo +'],
+                  [t.arancio,  'Saldo −'],
+                ] as [string, string][]).map(([c, l]) => (
+                  <View key={l} style={stili.voceLegenda}>
+                    <View style={[stili.puntino, { backgroundColor: c }]} />
+                    <Text style={stili.testoLegenda}>{l}</Text>
+                  </View>
+                ))}
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <BarChart
+                  data={datiSettimanaliGruppati}
+                  barWidth={16}
+                  labelWidth={48}
+                  barBorderRadius={4}
+                  yAxisTextStyle={{ fontSize: 10, color: t.piuSottile }}
+                  yAxisWidth={35}
+                  noOfSections={4}
+                  hideRules
+                  width={larghezzaSettimane}
+                  disableScroll
+                />
+              </ScrollView>
             </View>
           )}
 

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import { Transazione, Categoria, Istituto, TipoCategoria, Obiettivo } from '../types';
+import { Transazione, Categoria, Istituto, TipoCategoria, Obiettivo, VocePatrimonio, SnapshotPatrimonio } from '../types';
 import { CATEGORIE_DEFAULT } from '../constants/categorieDefault';
 import { ISTITUTI_DEFAULT } from '../constants/istitutiDefault';
 
@@ -19,6 +19,8 @@ interface FinanceState {
   categorie: Categoria[];
   istituti: Istituto[];
   obiettivi: Obiettivo[];
+  patrimonioVoci: VocePatrimonio[];
+  patrimonioStorico: SnapshotPatrimonio[];
   caricamento: boolean;
   reddito: number; // reddito mensile netto impostato dall'utente
 
@@ -56,6 +58,11 @@ interface FinanceState {
   aggiungiObiettivo: (dati: Omit<Obiettivo, 'id'>) => Promise<void>;
   modificaObiettivo: (id: string, aggiornamenti: Partial<Omit<Obiettivo, 'id'>>) => Promise<void>;
   eliminaObiettivo: (id: string) => Promise<void>;
+
+  aggiungiVocePatrimonio: (dati: Omit<VocePatrimonio, 'id'>) => Promise<void>;
+  modificaVocePatrimonio: (id: string, aggiornamenti: Partial<Omit<VocePatrimonio, 'id'>>) => Promise<void>;
+  eliminaVocePatrimonio: (id: string) => Promise<void>;
+  aggiornaSnapshotPatrimonio: () => Promise<void>;
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -66,24 +73,30 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
   categorie: [],
   istituti: [],
   obiettivi: [],
+  patrimonioVoci: [],
+  patrimonioStorico: [],
   caricamento: true,
   reddito: 0,
 
   caricaDati: async () => {
     set({ caricamento: true });
 
-    const [catRis, transRis, istRis, impostRis, obiRis] = await Promise.all([
+    const [catRis, transRis, istRis, impostRis, obiRis, patVociRis, patStoricoRis] = await Promise.all([
       supabase.from('categorie').select('*'),
       supabase.from('transazioni').select('*').order('data', { ascending: false }),
       supabase.from('istituti').select('*'),
       supabase.from('impostazioni').select('reddito_mensile').eq('id', 'default').maybeSingle(),
       supabase.from('obiettivi').select('*').order('created_at', { ascending: true }),
+      supabase.from('patrimonio_voci').select('*').order('created_at', { ascending: true }),
+      supabase.from('patrimonio_storico').select('*').order('data', { ascending: true }),
     ]);
 
     if (catRis.error)   console.error('[Supabase] carica categorie:', catRis.error.message);
     if (transRis.error) console.error('[Supabase] carica transazioni:', transRis.error.message);
     if (istRis.error)   console.error('[Supabase] carica istituti:', istRis.error.message);
     if (obiRis.error)   console.error('[Supabase] carica obiettivi:', obiRis.error.message);
+    if (patVociRis.error)    console.error('[Supabase] carica patrimonio_voci:', patVociRis.error.message);
+    if (patStoricoRis.error) console.error('[Supabase] carica patrimonio_storico:', patStoricoRis.error.message);
 
     // Prima apertura: inserisce le categorie e gli istituti predefiniti
     if (catRis.data?.length === 0) {
@@ -133,6 +146,14 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
         ...(data_scadenza != null && { dataScadenza: data_scadenza }),
         ...(created_at != null && { createdAt: created_at }),
       })),
+      patrimonioVoci: (patVociRis.data ?? []).map(({ id, nome, tipo, valore, colore }): VocePatrimonio => ({
+        id, nome, colore,
+        tipo: tipo as 'attivo' | 'passivo',
+        valore: Number(valore),
+      })),
+      patrimonioStorico: (patStoricoRis.data ?? []).map(({ data, valore }): SnapshotPatrimonio => ({
+        data, valore: Number(valore),
+      })),
       reddito: Number(impostRis.data?.reddito_mensile ?? 0),
       caricamento: false,
     });
@@ -147,6 +168,8 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
       .on('postgres_changes', { event: '*', schema: 'public', table: 'istituti' },     () => get().caricaDati())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'impostazioni' }, () => get().caricaDati())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'obiettivi' },     () => get().caricaDati())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'patrimonio_voci' },    () => get().caricaDati())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'patrimonio_storico' }, () => get().caricaDati())
       .subscribe((status, err) => {
         if (err) {
           // Il socket si chiude per timeout/rete: il client riconnette automaticamente
@@ -554,5 +577,57 @@ export const useFinanceStore = create<FinanceState>()((set, get) => ({
   eliminaObiettivo: async (id) => {
     set((s) => ({ obiettivi: s.obiettivi.filter((o) => o.id !== id) }));
     await supabase.from('obiettivi').delete().eq('id', id);
+  },
+
+  // ── Patrimonio netto ──
+
+  aggiungiVocePatrimonio: async (dati) => {
+    const nuova: VocePatrimonio = { ...dati, id: generaId() };
+    set((s) => ({ patrimonioVoci: [...s.patrimonioVoci, nuova] }));
+    await supabase.from('patrimonio_voci').insert({
+      id: nuova.id, nome: nuova.nome, tipo: nuova.tipo, valore: nuova.valore, colore: nuova.colore,
+    });
+  },
+
+  modificaVocePatrimonio: async (id, aggiornamenti) => {
+    set((s) => ({
+      patrimonioVoci: s.patrimonioVoci.map((v) => v.id === id ? { ...v, ...aggiornamenti } : v),
+    }));
+    const dbUpdate: Record<string, unknown> = {};
+    if (aggiornamenti.nome   !== undefined) dbUpdate.nome   = aggiornamenti.nome;
+    if (aggiornamenti.tipo   !== undefined) dbUpdate.tipo   = aggiornamenti.tipo;
+    if (aggiornamenti.valore !== undefined) dbUpdate.valore = aggiornamenti.valore;
+    if (aggiornamenti.colore !== undefined) dbUpdate.colore = aggiornamenti.colore;
+    await supabase.from('patrimonio_voci').update(dbUpdate).eq('id', id);
+  },
+
+  eliminaVocePatrimonio: async (id) => {
+    set((s) => ({ patrimonioVoci: s.patrimonioVoci.filter((v) => v.id !== id) }));
+    await supabase.from('patrimonio_voci').delete().eq('id', id);
+  },
+
+  // Calcola il patrimonio netto corrente (liquidità dai conti + beni manuali − debiti manuali)
+  // e lo fotografa per il mese in corso: upsert su patrimonio_storico, così il mese si aggiorna
+  // ogni volta che viene ricalcolato ma i mesi passati restano fissi una volta chiuso il mese
+  aggiornaSnapshotPatrimonio: async () => {
+    const { transazioni, patrimonioVoci } = get();
+    const liquidita = transazioni
+      .filter((t) => !t.ricorrente)
+      .reduce((s, t) => s + (t.tipo === 'entrata' ? t.importo : -t.importo), 0);
+    const attivi = patrimonioVoci.filter((v) => v.tipo === 'attivo').reduce((s, v) => s + v.valore, 0);
+    const passivi = patrimonioVoci.filter((v) => v.tipo === 'passivo').reduce((s, v) => s + v.valore, 0);
+    const totale = liquidita + attivi - passivi;
+
+    const oggi = new Date();
+    const chiave = `${oggi.getFullYear()}-${String(oggi.getMonth() + 1).padStart(2, '0')}`;
+
+    set((s) => ({
+      patrimonioStorico: [
+        ...s.patrimonioStorico.filter((sn) => sn.data !== chiave),
+        { data: chiave, valore: totale },
+      ].sort((a, b) => a.data.localeCompare(b.data)),
+    }));
+    const { error } = await supabase.from('patrimonio_storico').upsert({ data: chiave, valore: totale });
+    if (error) console.error('[Supabase] aggiorna snapshot patrimonio:', error.message);
   },
 }));
